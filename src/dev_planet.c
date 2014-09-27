@@ -39,7 +39,7 @@ int dpl_savePlanet( const Planet *p )
    xmlDocPtr doc;
    xmlTextWriterPtr writer;
    char file[PATH_MAX], *cleanName, buf[32];
-   int i;
+   int i, has_prices;
 
    /* Create the writer. */
    writer = xmlNewTextWriterDoc(&doc, 0);
@@ -124,17 +124,26 @@ int dpl_savePlanet( const Planet *p )
          if (planet_hasService( p, PLANET_SERVICE_BAR ))
             xmlw_elem( writer, "bar", "%s", p->bar_description );
          /* preserve prices */
-         xmlw_startElem( writer, "prices" );
+         has_prices = 0;
          for (i=0; i<econ_nprices; i++) {
-            if (p->is_priceset[i]){
-               xmlw_startElem( writer, "commodity" );
-               xmlw_attr( writer, "name", "%s", commodity_stack[i].name );
-               nsnprintf( buf, 32, "%.2f", p->prices[i] );
-               xmlw_str( writer, "%s", buf );
-               xmlw_endElem( writer ); /* "commodity" */
+            if (p->is_priceset[i]) {
+               has_prices = 1;
+               break;
             }
          }
-         xmlw_endElem( writer ); /* prices */
+         if (has_prices) {
+            xmlw_startElem( writer, "prices" );
+            for (i=0; i<econ_nprices; i++) {
+               if (p->is_priceset[i]){
+                  xmlw_startElem( writer, "commodity" );
+                  xmlw_attr( writer, "name", "%s", commodity_stack[i].name );
+                  nsnprintf( buf, 32, "%.2f", p->prices[i] );
+                  xmlw_str( writer, "%s", buf );
+                  xmlw_endElem( writer ); /* "commodity" */
+               }
+            }
+            xmlw_endElem( writer ); /* prices */
+         }
       }
       xmlw_endElem( writer ); /* "general" */
    }

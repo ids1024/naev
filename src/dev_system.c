@@ -79,7 +79,7 @@ static int dsys_compJump( const void *jmp1, const void *jmp2 )
  */
 int dsys_saveSystem( StarSystem *sys )
 {
-   int i;
+   int i, has_prices;
    xmlDocPtr doc;
    xmlTextWriterPtr writer;
    const Planet **sorted_planets;
@@ -169,17 +169,26 @@ int dsys_saveSystem( StarSystem *sys )
    free(sorted_jumps);
 
    /* preserve prices */
-   xmlw_startElem( writer, "prices" );
+   has_prices = 0;
    for (i=0; i<econ_nprices; i++) {
-      if (sys->is_priceset[i]){
-         xmlw_startElem( writer, "commodity" );
-         xmlw_attr( writer, "name", "%s", commodity_stack[i].name );
-         nsnprintf( buf, 32, "%.2f", sys->prices[i] );
-         xmlw_str( writer, "%s", buf );
-         xmlw_endElem( writer ); /* "commodity" */
+      if (sys->is_priceset[i]) {
+         has_prices = 1;
+         break;
       }
    }
-   xmlw_endElem( writer ); /* prices */
+   if (has_prices) {
+      xmlw_startElem( writer, "prices" );
+      for (i=0; i<econ_nprices; i++) {
+         if (sys->is_priceset[i]){
+            xmlw_startElem( writer, "commodity" );
+            xmlw_attr( writer, "name", "%s", commodity_stack[i].name );
+            nsnprintf( buf, 32, "%.2f", sys->prices[i] );
+            xmlw_str( writer, "%s", buf );
+            xmlw_endElem( writer ); /* "commodity" */
+         }
+      }
+      xmlw_endElem( writer ); /* prices */
+   }
 
    xmlw_endElem( writer ); /** "ssys" */
    xmlw_done(writer);
