@@ -36,10 +36,10 @@
   </jump>
  </jumps>
  <prices>
-  <commodity name="Food">96.000000</commodity>
-  <commodity name="Ore">66.000000</commodity>
-  <commodity name="Industrial Goods">771.000000</commodity>
-  <commodity name="Medicine">4854.000000</commodity>
-  <commodity name="Luxury Goods">4744.000000</commodity>
+  <commodity name="Food">96.00</commodity>
+  <commodity name="Ore">66.00</commodity>
+  <commodity name="Industrial Goods">771.00</commodity>
+  <commodity name="Medicine">4854.00</commodity>
+  <commodity name="Luxury Goods">4744.00</commodity>
  </prices>
 </ssys>
