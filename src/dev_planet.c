@@ -112,12 +112,17 @@ int dpl_savePlanet( const Planet *p )
          xmlw_elemEmpty( writer, "outfits" );
       if (planet_hasService( p, PLANET_SERVICE_SHIPYARD ))
          xmlw_elemEmpty( writer, "shipyard" );
+      if (planet_isBlackMarket(p))
+         xmlw_elemEmpty( writer, "blackmarket" );
       xmlw_endElem( writer ); /* "services" */
       if (planet_hasService( p, PLANET_SERVICE_LAND )) {
          xmlw_startElem( writer, "commodities" );
          for (i=0; i<p->ncommodities; i++)
             xmlw_elem( writer, "commodity", "%s", p->commodities[i]->name );
          xmlw_endElem( writer ); /* "commodities" */
+         xmlw_elem( writer, "description", "%s", p->description );
+         if (planet_hasService( p, PLANET_SERVICE_BAR ))
+            xmlw_elem( writer, "bar", "%s", p->bar_description );
          /* preserve prices */
          xmlw_startElem( writer, "prices" );
          for (i=0; i<econ_nprices; i++) {
@@ -130,9 +135,6 @@ int dpl_savePlanet( const Planet *p )
             }
          }
          xmlw_endElem( writer ); /* prices */
-         xmlw_elem( writer, "description", "%s", p->description );
-         if (planet_hasService( p, PLANET_SERVICE_BAR ))
-            xmlw_elem( writer, "bar", "%s", p->bar_description );
       }
       xmlw_endElem( writer ); /* "general" */
    }

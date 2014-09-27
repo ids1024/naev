@@ -170,7 +170,6 @@ int dsys_saveSystem( StarSystem *sys )
 
    /* preserve prices */
    xmlw_startElem( writer, "prices" );
-   xmlw_attr( writer, "sys", "%s", sys->name );
    for (i=0; i<econ_nprices; i++) {
       if (sys->is_priceset[i]){
          xmlw_startElem( writer, "commodity" );
