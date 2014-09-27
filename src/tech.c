@@ -288,9 +288,11 @@ int tech_groupWrite( xmlTextWriterPtr writer, tech_group_t *grp )
    xmlw_startElem( writer, "tech" );
 
    /* Save items. */
-   s  = array_size( grp->items );
-   for (i=0; i<s; i++)
-      xmlw_elem( writer, "item", "%s", tech_getItemName( &grp->items[i] ) );
+   if (grp->items != NULL) {
+      s  = array_size( grp->items );
+      for (i=0; i<s; i++)
+         xmlw_elem( writer, "item", "%s", tech_getItemName( &grp->items[i] ) );
+   }
 
    xmlw_endElem( writer ); /* "tech" */
 
