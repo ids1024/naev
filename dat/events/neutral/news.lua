@@ -421,7 +421,7 @@ function remove_header(faction)
 
    local news_table=news.get(faction)
 
-   for _,v in ipairs(news.get(faction)) do
+   for _,v in ipairs(news_table) do
 
       for _,v0 in ipairs(header_table[faction]) do
          if v:title()==v0 then
