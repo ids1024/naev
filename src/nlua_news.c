@@ -106,7 +106,7 @@ int nlua_loadNews( lua_State *L, int readonly )
  *    @luaparam faction faction of the article, "Generic" for non-factional
  *    @luaparam title Title of the article
  *    @luaparam content What's in the article
- *    @luaparam date_to_rm date to remove the article
+ *    @luaparam date_to_rm date to remove the article, use 0 to not expire
  *    @luaparam date What time to put, defaults to current date, use 0 to not use a date
  *    @luareturn The article matching name or nil if error.
  * @luafunc add( s )
@@ -123,7 +123,7 @@ int newsL_add( lua_State *L )
    faction = NULL;
 
    date = ntime_get();
-   date_to_rm = 50000000000000;
+   date_to_rm = 0;
 
    /* If a table is passed in. ugly hack */
    if (lua_istable(L, 1)) {
@@ -172,7 +172,7 @@ int newsL_add( lua_State *L )
             content = NULL;
 
             date = ntime_get();
-            date_to_rm = 50000000000000;
+            date_to_rm = 0;
          }
 
          lua_pop(L, 1);

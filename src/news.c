@@ -272,7 +272,8 @@ int *generate_news( char* faction )
          break;
 
       /* if the article is due for removal */
-      if (article_ptr->date_to_rm <= ntime_get()) {
+      /* 0 means no expiration */
+      if (article_ptr->date_to_rm != 0 && article_ptr->date_to_rm <= ntime_get())  {
          temp = article_ptr->next;
          free_article(article_ptr->id);
          article_ptr = temp;
