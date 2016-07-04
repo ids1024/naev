@@ -325,8 +325,9 @@ void player_new (void)
    player_newSetup( 0 );
 
    /* Get the name. */
-   player.name = dialogue_input( "Player Name", 2, 20,
-         "Please write your name:" );
+   //player.name = dialogue_input( "Player Name", 2, 20,
+   //      "Please write your name:" );
+   player.name = "Player";
 
    /* Player cancelled dialogue. */
    if (player.name == NULL) {
@@ -334,20 +335,20 @@ void player_new (void)
       return;
    }
 
-   if (nfile_fileExists("%ssaves/%s.ns", nfile_dataPath(), player.name)) {
-      r = dialogue_YesNo("Overwrite",
-            "You already have a pilot named %s. Overwrite?",player.name);
-      if (r==0) { /* no */
-         player_new();
-         return;
-      }
-   }
+   //if (nfile_fileExists("%ssaves/%s.ns", nfile_dataPath(), player.name)) {
+   //   r = dialogue_YesNo("Overwrite",
+   //         "You already have a pilot named %s. Overwrite?",player.name);
+   //   if (r==0) { /* no */
+   //      player_new();
+   //      return;
+   //   }
+   //}
 
    if (player_newMake())
       return;
 
    /* Display the intro. */
-   intro_display( "dat/intro", "intro" );
+   //intro_display( "dat/intro", "intro" );
 
    /* Play music. */
    music_choose( "ambient" );
