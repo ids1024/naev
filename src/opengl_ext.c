@@ -57,24 +57,8 @@ static void* gl_extGetProc( const char *proc )
  */
 static int gl_extMultitexture (void)
 {
-   /* Multitexture. */
-   if (gl_hasVersion( 1, 3 )) {
-      nglActiveTexture        = gl_extGetProc("glActiveTexture");
-      nglClientActiveTexture  = gl_extGetProc("glClientActiveTexture");
-      nglMultiTexCoord2d      = gl_extGetProc("glMultiTexCoord2d");
-   }
-   else if (gl_hasExt("GL_ARB_multitexture")) {
-      nglActiveTexture        = gl_extGetProc("glActiveTextureARB");
-      nglClientActiveTexture  = gl_extGetProc("glClientActiveTextureARB");
-      nglMultiTexCoord2d      = gl_extGetProc("glMultiTexCoord2dARB");
-   }
-   else {
-      nglActiveTexture        = NULL;
-      nglClientActiveTexture  = NULL;
-      nglMultiTexCoord2d      = NULL;
-      WARN("GL_ARB_multitexture not found!");
-      return -1;
-   }
+   nglActiveTexture = glActiveTexture;
+   nglClientActiveTexture = glClientActiveTexture;
 
    return 0;
 }
