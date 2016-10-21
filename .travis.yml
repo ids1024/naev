@@ -15,4 +15,4 @@ after_success:
   - eval "$(ssh-agent -s)"
   - chmod 600 .travis/deploy_key.pem
   - ssh-add .travis/deploy_key.pem
-  - rsync docs/html travis@iandouglasscott.com:/srv/naevdoc
+  - rsync docs/html travis@iandouglasscott.com:/srv/naevdoc 
