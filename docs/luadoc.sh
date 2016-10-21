@@ -61,4 +61,4 @@ cd lua
 ldoc .
 error=$?
 rm *.luadoc
-exit $?
+exit $error
