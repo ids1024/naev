@@ -49,6 +49,7 @@ typedef enum OutfitType_ {
    OUTFIT_TYPE_LAUNCHER, /**< Launcher. */
    OUTFIT_TYPE_AMMO, /**< Launcher ammo. */
    OUTFIT_TYPE_TURRET_LAUNCHER, /**< Turret launcher. */
+   OUTFIT_TYPE_HOMING, /**< Homing weapon. */
    OUTFIT_TYPE_MODIFICATION, /**< Modifies the ship base features. */
    OUTFIT_TYPE_AFTERBURNER, /**< Gives the ship afterburn capability. */
    OUTFIT_TYPE_JAMMER, /**< Used to nullify seeker missiles. */
@@ -210,6 +211,36 @@ typedef struct OutfitAmmoData_ {
 } OutfitAmmoData;
 
 /**
+ * @brief Represents homing weapon.
+ */
+typedef struct OutfitHomingData_ {
+   double duration;  /**< How long the ammo lives. */
+   double resist;    /**< Lowers chance of jamming by this amount */
+   OutfitAmmoAI ai;  /**< Smartness of ammo. */
+
+   double speed;     /**< Maximum speed */
+   double turn;      /**< Turn velocity in rad/s. */
+   double thrust;    /**< Acceleration */
+   double energy;    /**< Energy usage */
+   Damage dmg;       /**< Damage done. */
+
+   glTexture* gfx_space; /**< Graphic. */
+   double spin;      /**< Graphic spin rate. */
+   int sound;        /**< sound to play */
+   int sound_hit;    /**< Sound to play on hit. */
+   int spfx_armour;  /**< special effect on hit */
+   int spfx_shield;  /**< special effect on hit */
+
+   double delay;     /**< Delay between shots. */
+
+   /* Lockon information. */
+   double lockon;    /**< Time it takes to lock on the target */
+   double ew_target; /**< Target ewarfare at which it the lockon time is based off of. */
+   double ew_target2; /**< Target ewarfare squared for quicker comparisons. */
+   double arc;       /**< Semi-angle of the arc which it will lock on in. */
+} OutfitHomingData;
+
+/**
  * @brief Represents a ship modification.
  *
  * These modify the ship's basic properties when equipped on a pilot.
@@ -350,6 +381,7 @@ typedef struct Outfit_ {
       OutfitBeamData bem;         /**< BEAM */
       OutfitLauncherData lau;     /**< MISSILE */
       OutfitAmmoData amm;         /**< AMMO */
+      OutfitHomingData hom;         /**< HOMING */
       OutfitModificationData mod; /**< MODIFICATION */
       OutfitAfterburnerData afb;  /**< AFTERBURNER */
       OutfitJammerData jam;       /**< JAMMER */
@@ -375,6 +407,7 @@ int outfit_isForward( const Outfit* o );
 int outfit_isBolt( const Outfit* o );
 int outfit_isBeam( const Outfit* o );
 int outfit_isLauncher( const Outfit* o );
+int outfit_isHoming( const Outfit* o );
 int outfit_isAmmo( const Outfit* o );
 int outfit_isSeeker( const Outfit* o );
 int outfit_isTurret( const Outfit* o );

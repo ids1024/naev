@@ -116,6 +116,8 @@ static double weapon_aimTurret( const Outfit *outfit, const Pilot *parent,
       double swivel, double time );
 static void weapon_createBolt( Weapon *w, const Outfit* outfit, double T,
       const double dir, const Vector2d* pos, const Vector2d* vel, const Pilot* parent, double time );
+static void weapon_createHoming( Weapon *w, const Outfit* outfit, double T,
+      const double dir, const Vector2d* pos, const Vector2d* vel, const Pilot* parent, double time );
 static void weapon_createAmmo( Weapon *w, const Outfit* outfit, double T,
       const double dir, const Vector2d* pos, const Vector2d* vel, const Pilot* parent, double time );
 static Weapon* weapon_create( const Outfit* outfit, double T,
@@ -138,6 +140,7 @@ static void weapon_hitBeam( Weapon* w, Pilot* p, WeaponLayer layer,
       Vector2d pos[2], const double dt );
 /* think */
 static void think_seeker( Weapon* w, const double dt );
+static void think_homing( Weapon* w, const double dt );
 static void think_beam( Weapon* w, const double dt );
 /* externed */
 void weapon_minimap( const double res, const double w,
@@ -373,6 +376,81 @@ static void think_seeker( Weapon* w, const double dt )
 
    /* Modulate max speed. */
    //w->solid->speed_max = w->outfit->u.amm.speed * (1. - w->jam_power);
+}
+
+
+/**
+ * @brief The AI of homing weapons.
+ *
+ *    @param w Weapon to do the thinking.
+ *    @param dt Current delta tick.
+ */
+static void think_homing( Weapon* w, const double dt )
+{
+   double diff;
+   Pilot *p;
+   Vector2d v;
+   double t, turn_max;
+
+   if (w->target == w->parent)
+      return; /* no self shooting */
+
+   p = pilot_get(w->target); /* no null pilot_nstack */
+   if (p==NULL) {
+      weapon_setThrust( w, 0. );
+      weapon_setTurn( w, 0. );
+      return;
+   }
+
+   /* Handle by status. */
+   switch (w->status) {
+
+      case WEAPON_STATUS_OK: /* Check to see if can get jammed */
+      /* Purpose fallthrough */
+      case WEAPON_STATUS_UNJAMMED: /* Work as expected */
+
+         /* Smart seekers take into account ship velocity. */
+         if (w->outfit->u.hom.ai == AMMO_AI_SMART) {
+
+            /* Calculate time to reach target. */
+            vect_cset( &v, p->solid->pos.x - w->solid->pos.x,
+                  p->solid->pos.y - w->solid->pos.y );
+            t = vect_odist( &v ) / w->outfit->u.hom.speed;
+
+            /* Calculate target's movement. */
+            vect_cset( &v, v.x + t*(p->solid->vel.x - w->solid->vel.x),
+                  v.y + t*(p->solid->vel.y - w->solid->vel.y) );
+
+            /* Get the angle now. */
+            diff = angle_diff(w->solid->dir, VANGLE(v) );
+         }
+         /* Other seekers are stupid. */
+         else {
+            diff = angle_diff(w->solid->dir, /* Get angle to target pos */
+                  vect_angle(&w->solid->pos, &p->solid->pos));
+         }
+
+         /* Set turn. */
+         turn_max = w->outfit->u.hom.turn * (1. - w->jam_power);
+         weapon_setTurn( w, CLAMP( -turn_max, turn_max,
+                  10 * diff * w->outfit->u.hom.turn ));
+         break;
+
+      case WEAPON_STATUS_JAMMED: /* Continue doing whatever */
+         /* Do nothing, dir_vel should be set already if needed */
+         break;
+
+      default:
+         WARN("Unknown weapon status for '%s'", w->outfit->name);
+         break;
+   }
+
+   /* Limit speed here */
+   w->real_vel = MIN( w->outfit->u.hom.speed, w->real_vel + w->outfit->u.hom.thrust*dt );
+   vect_pset( &w->solid->vel, (1. - w->jam_power) * w->real_vel, w->solid->dir );
+
+   /* Modulate max speed. */
+   //w->solid->speed_max = w->outfit->u.hom.speed * (1. - w->jam_power);
 }
 
 
@@ -1285,7 +1363,7 @@ static void weapon_createBolt( Weapon *w, const Outfit* outfit, double T,
  *    @param parent Shooter.
  *    @param time Expected flight time.
  */
-static void weapon_createAmmo( Weapon *w, const Outfit* launcher, double T,
+static void weapon_createHoming( Weapon *w, const Outfit* launcher, double T,
       const double dir, const Vector2d* pos, const Vector2d* vel, const Pilot* parent, double time )
 {
    (void) T;
@@ -1325,6 +1403,84 @@ static void weapon_createAmmo( Weapon *w, const Outfit* launcher, double T,
    /* Set up ammo details. */
    mass        = w->outfit->mass;
    w->timer    = ammo->u.amm.duration;
+   w->solid    = solid_create( mass, rdir, pos, &v, SOLID_UPDATE_RK4 );
+   if (w->outfit->u.amm.thrust != 0.) {
+      weapon_setThrust( w, w->outfit->u.amm.thrust * mass );
+      w->solid->speed_max = w->outfit->u.amm.speed; /* Limit speed, we only care if it has thrust. */
+   }
+
+   /* Handle seekers. */
+   w->think = think_homing;
+
+   /* If they are seeking a pilot, increment lockon counter. */
+   if (pilot_target == NULL)
+      pilot_target = pilot_get(w->target);
+   if (pilot_target != NULL)
+      pilot_target->lockons++;
+
+   /* Play sound. */
+   w->voice    = sound_playPos(w->outfit->u.amm.sound,
+         w->solid->pos.x,
+         w->solid->pos.y,
+         w->solid->vel.x,
+         w->solid->vel.y);
+
+   /* Set facing direction. */
+   gfx = outfit_gfx( w->outfit );
+   gl_getSpriteFromDir( &w->sx, &w->sy, gfx, w->solid->dir );
+}
+
+
+/**
+ * @brief Creates homing weapon bolt.
+ *
+ *    @param w Homing weapon.
+ *    @param outfit Outfit which spawned the weapon.
+ *    @param T temperature of the shooter.
+ *    @param dir Direction the shooter is facing.
+ *    @param pos Position of the shooter.
+ *    @param vel Velocity of the shooter.
+ *    @param parent Shooter.
+ *    @param time Expected flight time.
+ */
+static void weapon_createAmmo( Weapon *w, const Outfit* outfit, double T,
+      const double dir, const Vector2d* pos, const Vector2d* vel, const Pilot* parent, double time )
+{
+   (void) T;
+   Vector2d v;
+   double mass, rdir;
+   Pilot *pilot_target;
+   glTexture *gfx;
+
+   pilot_target = NULL;
+   if (w->outfit->type == OUTFIT_TYPE_AMMO &&
+            outfit->type == OUTFIT_TYPE_TURRET_LAUNCHER) {
+      pilot_target = pilot_get(w->target);
+      rdir = weapon_aimTurret( outfit, parent, pilot_target, pos, vel, dir, M_PI, time );
+   }
+   else
+      rdir = dir;
+
+   /*if (outfit->u.hom.accuracy != 0.) {
+      rdir += RNG_2SIGMA() * outfit->u.hom.accuracy/2. * 1./180.*M_PI;
+      if ((rdir > 2.*M_PI) || (rdir < 0.))
+         rdir = fmod(rdir, 2.*M_PI);
+   }*/
+   if (rdir < 0.)
+      rdir += 2.*M_PI;
+   else if (rdir >= 2.*M_PI)
+      rdir -= 2.*M_PI;
+
+   /* If thrust is 0. we assume it starts out at speed. */
+   v = *vel;
+   if (outfit->u.hom.thrust == 0.)
+      vect_cadd( &v, cos(rdir) * w->outfit->u.amm.speed,
+            sin(rdir) * w->outfit->u.amm.speed );
+   w->real_vel = VMOD(v);
+
+   /* Set up homing details. */
+   mass        = w->outfit->mass;
+   w->timer    = outfit->u.hom.duration;
    w->solid    = solid_create( mass, rdir, pos, &v, SOLID_UPDATE_RK4 );
    if (w->outfit->u.amm.thrust != 0.) {
       weapon_setThrust( w, w->outfit->u.amm.thrust * mass );
@@ -1428,6 +1584,10 @@ static Weapon* weapon_create( const Outfit* outfit, double T,
       case OUTFIT_TYPE_TURRET_LAUNCHER:
          weapon_createAmmo( w, outfit, T, dir, pos, vel, parent, time );
          break;
+
+      case OUTFIT_TYPE_HOMING:
+         weapon_createHoming( w, outfit, T, dir, pos, vel, parent, time );
+	 break;
 
       /* just dump it where the player is */
       default:

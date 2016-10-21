@@ -67,6 +67,7 @@ static void outfit_parseSBolt( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSBeam( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSLauncher( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSAmmo( Outfit* temp, const xmlNodePtr parent );
+static void outfit_parseSHoming( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSMod( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSAfterburner( Outfit* temp, const xmlNodePtr parent );
 static void outfit_parseSJammer( Outfit *temp, const xmlNodePtr parent );
@@ -360,7 +361,7 @@ static int outfit_setDefaultSize( Outfit *o )
  */
 int outfit_isActive( const Outfit* o )
 {
-   if (outfit_isForward(o) || outfit_isTurret(o) || outfit_isLauncher(o) || outfit_isFighterBay(o))
+   if (outfit_isForward(o) || outfit_isTurret(o) || outfit_isLauncher(o) || outfit_isFighterBay(o) || outfit_isHoming(o))
       return 1;
    if (outfit_isMod(o) && o->u.mod.active)
       return 1;
@@ -413,6 +414,15 @@ int outfit_isLauncher( const Outfit* o )
          (o->type==OUTFIT_TYPE_TURRET_LAUNCHER) );
 }
 /**
+ * @brief Checks if outfit is a homing weapon.
+ *    @param o Outfit to check.
+ *    @return 1 if o is a weapon launcher.
+ */
+int outfit_isHoming( const Outfit* o )
+{
+   return (o->type==OUTFIT_TYPE_HOMING);
+}
+/**
  * @brief Checks if outfit is ammo for a launcher.
  *    @param o Outfit to check.
  *    @return 1 if o is ammo.
@@ -429,7 +439,7 @@ int outfit_isAmmo( const Outfit* o )
 int outfit_isSeeker( const Outfit* o )
 {
    if (((o->type==OUTFIT_TYPE_AMMO) || (o->type==OUTFIT_TYPE_TURRET_LAUNCHER) ||
-            (o->type==OUTFIT_TYPE_LAUNCHER)) &&
+            (o->type==OUTFIT_TYPE_LAUNCHER) || o->type==OUTFIT_TYPE_HOMING) &&
          (o->u.amm.ai > 0))
       return 1;
    return 0;
@@ -548,6 +558,7 @@ glTexture* outfit_gfx( const Outfit* o )
    if (outfit_isBolt(o)) return o->u.blt.gfx_space;
    else if (outfit_isBeam(o)) return o->u.bem.gfx;
    else if (outfit_isAmmo(o)) return o->u.amm.gfx_space;
+   else if (outfit_isHoming(o)) return o->u.hom.gfx_space;
    return NULL;
 }
 /**
@@ -559,6 +570,7 @@ int outfit_spfxArmour( const Outfit* o )
    if (outfit_isBolt(o)) return o->u.blt.spfx_armour;
    else if (outfit_isBeam(o)) return o->u.bem.spfx_armour;
    else if (outfit_isAmmo(o)) return o->u.amm.spfx_armour;
+   else if (outfit_isHoming(o)) return o->u.hom.spfx_armour;
    return -1;
 }
 /**
@@ -570,6 +582,7 @@ int outfit_spfxShield( const Outfit* o )
    if (outfit_isBolt(o)) return o->u.blt.spfx_shield;
    else if (outfit_isBeam(o)) return o->u.bem.spfx_shield;
    else if (outfit_isAmmo(o)) return o->u.amm.spfx_shield;
+   else if (outfit_isHoming(o)) return o->u.hom.spfx_shield;
    return -1;
 }
 /**
@@ -581,6 +594,7 @@ const Damage *outfit_damage( const Outfit* o )
    if (outfit_isBolt(o)) return &o->u.blt.dmg;
    else if (outfit_isBeam(o)) return &o->u.bem.dmg;
    else if (outfit_isAmmo(o)) return &o->u.amm.dmg;
+   else if (outfit_isHoming(o)) return &o->u.hom.dmg;
    return NULL;
 }
 /**
@@ -593,6 +607,7 @@ double outfit_delay( const Outfit* o )
    else if (outfit_isBeam(o)) return o->u.bem.delay;
    else if (outfit_isLauncher(o)) return o->u.lau.delay;
    else if (outfit_isFighterBay(o)) return o->u.bay.delay;
+   else if (outfit_isHoming(o)) return o->u.hom.delay;
    return -1;
 }
 /**
@@ -625,6 +640,7 @@ double outfit_energy( const Outfit* o )
    if (outfit_isBolt(o)) return o->u.blt.energy;
    else if (outfit_isBeam(o)) return o->u.bem.energy;
    else if (outfit_isAmmo(o)) return o->u.amm.energy;
+   else if (outfit_isHoming(o)) return o->u.hom.energy;
    return -1.;
 }
 /**
@@ -669,6 +685,18 @@ double outfit_range( const Outfit* o )
 
       return o->u.amm.speed * o->u.amm.duration;
    }
+   else if (outfit_isHoming(o)) {
+      if (o->u.hom.thrust) {
+         at = o->u.hom.speed / o->u.hom.thrust;
+         if (at < o->u.hom.duration)
+            return o->u.hom.speed * (o->u.hom.duration - at / 2.);
+
+         /* Maximum speed will never be reached. */
+         return pow2(o->u.hom.duration) * o->u.hom.thrust / 2.;
+      }
+
+      return o->u.hom.speed * o->u.hom.duration;
+   }
    else if (outfit_isLauncher(o)) {
       amm = outfit_ammo(o);
       if (amm != NULL)
@@ -699,6 +727,17 @@ double outfit_speed( const Outfit* o )
          else return o->u.amm.thrust * o->u.amm.duration/2;
       }
    }
+   else if (outfit_isHoming(o)) {
+      if (o->u.hom.thrust == 0)
+         return o->u.hom.speed;
+      else {     /*Gets the average speed*/
+         t = o->u.hom.speed / o->u.hom.thrust; /*time to reach max speed*/
+         if (t < o->u.hom.duration)
+            return (o->u.hom.thrust * t*t/2 + 
+                  o->u.hom.speed*(o->u.hom.duration-t))/o->u.hom.duration;
+         else return o->u.hom.thrust * o->u.hom.duration/2;
+      }
+   }
    else if (outfit_isLauncher(o)) {
       amm = outfit_ammo(o);
       if (amm != NULL)
@@ -715,6 +754,7 @@ double outfit_spin( const Outfit* o )
 {
    if (outfit_isBolt(o)) return o->u.blt.spin;
    else if (outfit_isAmmo(o)) return o->u.amm.spin;
+   else if (outfit_isHoming(o)) return o->u.hom.spin;
    return -1.;
 }
 /**
@@ -726,6 +766,7 @@ int outfit_sound( const Outfit* o )
 {
    if (outfit_isBolt(o)) return o->u.blt.sound;
    else if (outfit_isAmmo(o)) return o->u.amm.sound;
+   else if (outfit_isHoming(o)) return o->u.hom.sound;
    return -1.;
 }
 /**
@@ -737,6 +778,7 @@ int outfit_soundHit( const Outfit* o )
 {
    if (outfit_isBolt(o)) return o->u.blt.sound_hit;
    else if (outfit_isAmmo(o)) return o->u.amm.sound_hit;
+   else if (outfit_isHoming(o)) return o->u.hom.sound_hit;
    return -1.;
 }
 /**
@@ -753,6 +795,7 @@ double outfit_duration( const Outfit* o )
    else if (outfit_isBolt(o)) return (o->u.blt.range / o->u.blt.speed);
    else if (outfit_isBeam(o)) return o->u.bem.duration;
    else if (outfit_isAmmo(o)) return o->u.amm.duration;
+   else if (outfit_isHoming(o)) return o->u.hom.duration;
    else if (outfit_isLauncher(o)) {
       amm = outfit_ammo(o);
       if (amm != NULL)
@@ -792,6 +835,7 @@ const char* outfit_getType( const Outfit* o )
          "Launcher",
          "Ammunition",
          "Turret Launcher",
+	 "Homing Weapon",
          "Ship Modification",
          "Afterburner",
          "Jammer",
@@ -822,6 +866,7 @@ const char* outfit_getTypeBroad( const Outfit* o )
    else if (outfit_isBeam(o))       return "Beam Weapon";
    else if (outfit_isLauncher(o))   return "Launcher";
    else if (outfit_isAmmo(o))       return "Ammo";
+   else if (outfit_isHoming(o))     return "Homing Weapon";
    else if (outfit_isTurret(o))     return "Turret";
    else if (outfit_isMod(o))        return "Modification";
    else if (outfit_isAfterburner(o)) return "Afterburner";
@@ -956,6 +1001,7 @@ static OutfitType outfit_strToOutfitType( char *buf )
    O_CMP("launcher",       OUTFIT_TYPE_LAUNCHER);
    O_CMP("ammo",           OUTFIT_TYPE_AMMO);
    O_CMP("turret launcher",OUTFIT_TYPE_TURRET_LAUNCHER);
+   O_CMP("homing",         OUTFIT_TYPE_HOMING);
    O_CMP("modification",   OUTFIT_TYPE_MODIFICATION);
    O_CMP("afterburner",    OUTFIT_TYPE_AFTERBURNER);
    O_CMP("fighter bay",    OUTFIT_TYPE_FIGHTER_BAY);
@@ -1327,6 +1373,163 @@ if (o) WARN("Outfit '%s' missing/invalid '"s"' element", temp->name) /**< Define
    MELEMENT(temp->cpu==0.,"cpu");
    MELEMENT(temp->u.bem.dmg.damage==0,"damage");
    MELEMENT(temp->u.bem.heatup==0.,"heatup");
+#undef MELEMENT
+}
+
+
+/**
+ * @brief Parses the specific area for a weapon and loads it into Outfit.
+ *
+ *    @param temp Outfit to finish loading.
+ *    @param parent Outfit's parent node.
+ */
+static void outfit_parseSHoming( Outfit* temp, const xmlNodePtr parent )
+{
+   xmlNodePtr node;
+   char *buf;
+   int l;
+
+   node = parent->xmlChildrenNode;
+
+   /* Defaults. */
+   temp->u.hom.spfx_armour = -1;
+   temp->u.hom.spfx_shield = -1;
+   temp->u.hom.sound       = -1;
+   temp->u.hom.sound_hit   = -1;
+   temp->u.hom.ai          = -1;
+
+   do { /* load all the data */
+      xml_onlyNodes(node);
+      xmlr_float(node,"delay",temp->u.hom.delay);
+      xmlr_float(node,"ew_target",temp->u.hom.ew_target);
+      xmlr_float(node,"lockon",temp->u.hom.lockon);
+      if (!outfit_isTurret(temp))
+         xmlr_float(node,"arc",temp->u.hom.arc);
+
+      /* Basic */
+      if (xml_isNode(node,"duration")) {
+         buf = xml_nodeProp(node,"blowup");
+         if (buf != NULL) {
+            if (strcmp(buf,"armour")==0)
+               outfit_setProp(temp, OUTFIT_PROP_WEAP_BLOWUP_SHIELD);
+            else if (strcmp(buf,"shield")==0)
+               outfit_setProp(temp, OUTFIT_PROP_WEAP_BLOWUP_ARMOUR);
+            else
+               WARN("Outfit '%s' has invalid blowup property: '%s'",
+                     temp->name, buf );
+            free(buf);
+         }
+         temp->u.hom.duration = xml_getFloat(node);
+         continue;
+      }
+      xmlr_float(node,"resist",temp->u.hom.resist);
+      /* Movement */
+      xmlr_float(node,"thrust",temp->u.hom.thrust);
+      xmlr_float(node,"turn",temp->u.hom.turn);
+      xmlr_float(node,"speed",temp->u.hom.speed);
+      xmlr_float(node,"energy",temp->u.hom.energy);
+      if (xml_isNode(node,"gfx")) {
+         temp->u.hom.gfx_space = xml_parseTexture( node,
+               OUTFIT_GFX_PATH"space/%s.png", 6, 6,
+               OPENGL_TEX_MAPTRANS | OPENGL_TEX_MIPMAPS );
+         xmlr_attr(node, "spin", buf);
+         if (buf != NULL) {
+            outfit_setProp( temp, OUTFIT_PROP_WEAP_SPIN );
+            temp->u.hom.spin = atof( buf );
+            free(buf);
+         }
+         continue;
+      }
+      if (xml_isNode(node,"spfx_armour")) {
+         temp->u.hom.spfx_armour = spfx_get(xml_get(node));
+         continue;
+      }
+      if (xml_isNode(node,"spfx_shield")) {
+         temp->u.hom.spfx_shield = spfx_get(xml_get(node));
+         continue;
+      }
+      if (xml_isNode(node,"sound")) {
+         temp->u.hom.sound = sound_get( xml_get(node) );
+         continue;
+      }
+      if (xml_isNode(node,"sound_hit")) {
+         temp->u.hom.sound_hit = sound_get( xml_get(node) );
+         continue;
+      }
+      if (xml_isNode(node,"damage")) {
+         outfit_parseDamage( &temp->u.hom.dmg, node );
+         continue;
+      }
+      if (xml_isNode(node,"ai")) {
+         buf = xml_get(node);
+         if (buf != NULL) {
+
+            if (strcmp(buf,"dumb")==0)
+               temp->u.hom.ai = AMMO_AI_DUMB;
+            else if (strcmp(buf,"seek")==0)
+               temp->u.hom.ai = AMMO_AI_SEEK;
+            else if (strcmp(buf,"smart")==0)
+               temp->u.hom.ai = AMMO_AI_SMART;
+            else
+               WARN("Ammo '%s' has unknown ai type '%s'.", temp->name, buf);
+         }
+         continue;
+      }
+      WARN("Outfit '%s' has unknown node '%s'",temp->name, node->name);
+   } while (xml_nextNode(node));
+
+   /* Post-processing */
+   temp->u.hom.resist /= 100.; /* Set it in per one */
+   temp->u.hom.turn   *= M_PI/180.; /* Convert to rad/s. */
+   temp->u.hom.arc *= M_PI/180.;
+   temp->u.hom.ew_target2 = pow2( temp->u.hom.ew_target );
+
+   /* Set default outfit size if necessary. */
+   if (temp->slot.size == OUTFIT_SLOT_SIZE_NA)
+      outfit_setDefaultSize( temp );
+
+   /* Set short description. */
+   temp->desc_short = malloc( OUTFIT_SHORTDESC_MAX );
+   l = nsnprintf( temp->desc_short, OUTFIT_SHORTDESC_MAX,
+         "%s\n"
+         "%.0f%% Penetration\n"
+         "%.0f Damage [%s]\n",
+         outfit_getType(temp),
+         temp->u.hom.dmg.penetration*100.,
+         temp->u.hom.dmg.damage, dtype_damageTypeToStr(temp->u.hom.dmg.type) );
+   if (temp->u.blt.dmg.disable > 0.) {
+      l += nsnprintf( &temp->desc_short[l], OUTFIT_SHORTDESC_MAX-l,
+         "%.0f Disable\n",
+         temp->u.hom.dmg.disable );
+   }
+   l += nsnprintf( &temp->desc_short[l], OUTFIT_SHORTDESC_MAX-l,
+         "%.0f Energy\n"
+         "%.0f Maximum Speed\n"
+         "%.0f%% Jam resistance\n"
+         "%.1f duration",
+         temp->u.hom.energy,
+         temp->u.hom.speed,
+         temp->u.hom.resist,
+         temp->u.hom.duration );
+#define MELEMENT(o,s) \
+if (o) WARN("Outfit '%s' missing/invalid '"s"' element", temp->name) /**< Define to help check for data errors. */
+   MELEMENT(temp->mass==0.,"mass");
+   MELEMENT(temp->u.hom.gfx_space==NULL,"gfx");
+   MELEMENT(temp->u.hom.spfx_shield==-1,"spfx_shield");
+   MELEMENT(temp->u.hom.spfx_armour==-1,"spfx_armour");
+   MELEMENT((sound_disabled!=0) && (temp->u.hom.sound<0),"sound");
+   /* MELEMENT(temp->u.hom.thrust==0,"thrust"); */
+   /* Dumb missiles don't need everything */
+   if (outfit_isSeeker(temp)) {
+      MELEMENT(temp->u.hom.turn==0,"turn");
+   }
+   MELEMENT(temp->u.hom.speed==0,"speed");
+   MELEMENT(temp->u.hom.duration==0,"duration");
+   MELEMENT(temp->u.hom.dmg.damage==0,"damage");
+   /*MELEMENT(temp->u.hom.energy==0.,"energy");*/
+   MELEMENT(temp->cpu!=0.,"cpu");
+
+   MELEMENT(temp->u.hom.delay==0.,"delay");
 #undef MELEMENT
 }
 
@@ -2178,6 +2381,8 @@ static int outfit_parse( Outfit* temp, const char* file )
             outfit_parseSLauncher( temp, node );
          else if (outfit_isAmmo(temp))
             outfit_parseSAmmo( temp, node );
+	 else if (outfit_isHoming(temp))
+            outfit_parseSHoming( temp, node );
          else if (outfit_isMod(temp))
             outfit_parseSMod( temp, node );
          else if (outfit_isAfterburner(temp))

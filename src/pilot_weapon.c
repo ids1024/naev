@@ -1132,6 +1132,26 @@ static int pilot_shootWeapon( Pilot* p, PilotOutfitSlot* w, double time )
    }
 
    /*
+    * Homing weapons.
+   */
+   else if (outfit_isHoming(w->outfit)) {
+      exit(777);
+      /* Shooter can't be the target - sanity check for the player.p */
+      if (p->id==p->target)
+         return 0;
+
+      /* enough energy? */
+      if (outfit_energy(w->outfit)*energy_mod > p->energy)
+         return 0;
+
+      energy      = outfit_energy(w->outfit)*energy_mod;
+      p->energy  -= energy;
+      pilot_heatAddSlot( p, w );
+      weapon_add( w->outfit, w->heat_T, p->solid->dir,
+            &vp, &p->solid->vel, p, p->target, time );
+   }
+
+   /*
     * Fighter bays.
     */
    else if (outfit_isFighterBay(w->outfit)) {
