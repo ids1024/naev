@@ -12,8 +12,6 @@ before_install:
 script:
   - "./autogen.sh && ./configure && make"
   - cd docs && ./luadoc.sh && cd ..
-after_success:
-  - eval "$(ssh-agent -s)"
-  - chmod 600 .travis/deploy_key.pem
-  - ssh-add .travis/deploy_key.pem
-  - rsync -e "ssh -o 'StrictHostKeyChecking no'" -r --delete docs/html/ travis@iandouglasscott.com:/srv/naevdoc
+deploy:
+  provider: script
+  script: .travis/deploy.sh
