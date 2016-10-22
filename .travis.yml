@@ -15,3 +15,6 @@ script:
 deploy:
   provider: script
   script: .travis/deploy.sh
+  on:
+    condition: "$CC = gcc" # Don't want to run twice
+    branch: travis # Should be removed when for real use; master is default
