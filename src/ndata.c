@@ -39,7 +39,6 @@
 #include "SDL_mutex.h"
 
 #include "log.h"
-#include "md5.h"
 #include "nxml.h"
 #include "nfile.h"
 #include "conf.h"
