@@ -11,6 +11,7 @@ if [ ! -d "libxml2-$LIBXML_VERSION" ]; then
     wget ftp://xmlsoft.org/libxml2/libxml2-$LIBXML_VERSION.tar.gz
     tar -xf libxml2-$LIBXML_VERSION.tar.gz
     cd libxml2-$LIBXML_VERSION
+    patch -p1 < ../libxml2.patch
     emconfigure ./configure --without-python
     emmake make
     cd ..

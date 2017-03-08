@@ -1,0 +1,13 @@
+diff -up libxml2-2.9.4/xmlIO.c libxml2-2.9.4-new/xmlIO.c
+--- libxml2-2.9.4/xmlIO.c	2016-05-23 00:25:25.000000000 -0700
++++ libxml2-2.9.4-new/xmlIO.c	2017-03-08 14:40:02.483086831 -0800
+@@ -3334,7 +3334,8 @@ xmlParserInputBufferGrow(xmlParserInputB
+      * Call the read method for this I/O type.
+      */
+     if (in->readcallback != NULL) {
+-	res = in->readcallback(in->context, &buffer[0], len);
++       if (in->readcallback != (xmlInputReadCallback) xmlNop)
++           res = in->readcallback(in->context, &buffer[0], len);
+ 	if (res <= 0)
+ 	    in->readcallback = endOfInput;
+     } else {
