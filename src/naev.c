@@ -18,6 +18,7 @@
  */
 /* localised global */
 #include "SDL.h"
+#include "emscripten.h"
 
 #include "naev.h"
 #include "log.h" /* for DEBUGGING */
@@ -137,7 +138,7 @@ static asymbol **syms = NULL;
 static void print_SDLversion (void);
 static void loadscreen_load (void);
 static void loadscreen_unload (void);
-static void load_all (void);
+static void load_all (void *var);
 static void unload_all (void);
 static void display_fps( const double dt );
 static void window_caption (void);
@@ -152,6 +153,7 @@ static void render_all (void);
 /* Misc. */
 void loadscreen_render( double done, const char *msg ); /* nebula.c */
 void main_loop( int update ); /* dialogue.c */
+void main_loop1(void);
 
 
 /**
@@ -367,11 +369,11 @@ int main( int argc, char** argv )
    fps_setPos( 15., (double)(gl_screen.h-15-gl_defFont.h) );
 
    /* Misc graphics init */
-   if (nebu_init() != 0) { /* Initializes the nebula */
+   //if (nebu_init() != 0) { /* Initializes the nebula */
       /* An error has happened */
-      ERR("Unable to initialize the Nebula subsystem!");
+   //   ERR("Unable to initialize the Nebula subsystem!");
       /* Weirdness will occur... */
-   }
+   //}
    gui_init(); /* initializes the GUI graphics */
    toolkit_init(); /* initializes the toolkit */
    map_init(); /* initializes the map. */
@@ -379,101 +381,12 @@ int main( int argc, char** argv )
    cli_init(); /* Initialize console. */
 
    /* Data loading */
-   load_all();
+   emscripten_async_call(load_all, 0, 0);
+}
 
-#if SDL_VERSION_ATLEAST(2,0,0)
-   /* Detect size changes that occurred during load. */
-   naev_resize( -1., -1. );
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
-   /* Generate the CSV. */
-   if (conf.devcsv)
-      dev_csv();
-
-   /* Unload load screen. */
-   loadscreen_unload();
-
-   /* Start menu. */
-   menu_main();
-
-   /* Force a minimum delay with loading screen */
-   if ((SDL_GetTicks() - time_ms) < NAEV_INIT_DELAY)
-      SDL_Delay( NAEV_INIT_DELAY - (SDL_GetTicks() - time_ms) );
-   fps_init(); /* initializes the time_ms */
-
-#if HAS_UNIX
-   /* Tell the player to migrate their configuration files out of ~/.naev */
-   /* TODO get rid of this cruft ASAP. */
-   if ((oldconfig) && (!conf.datapath)) {
-      char path[PATH_MAX], *script, *home;
-      uint32_t scriptsize;
-      int ret;
-
-      nsnprintf( path, PATH_MAX, "%s/naev-confupdate.sh", ndata_getDirname() );
-      home = SDL_getenv("HOME");
-      ret = dialogue_YesNo( "Warning", "Your configuration files are in a deprecated location and must be migrated:\n"
-            "   \er%s/.naev/\e0\n\n"
-            "The update script can likely be found in your Naev data directory:\n"
-            "   \er%s\e0\n\n"
-            "Would you like to run it automatically?", home, path );
-
-      /* Try to run the script. */
-      if (ret) {
-         ret = -1;
-         /* Running from ndata. */
-         if (ndata_getPath() != NULL) {
-            script = ndata_read( "naev-confupdate.sh", &scriptsize );
-            if (script != NULL)
-               ret = system(script);
-         }
-
-         /* Running from laid-out files or ndata_read failed. */
-         if ((nfile_fileExists(path)) && (ret == -1)) {
-            script = nfile_readFile( (int*)&scriptsize, path );
-            if (script != NULL)
-               ret = system(script);
-         }
-
-         /* We couldn't find the script. */
-         if (ret == -1) {
-            dialogue_alert( "The update script was not found at:\n\er%s\e0\n\n"
-                  "Please locate and run it manually.", path );
-         }
-         /* Restart, as the script succeeded. */
-         else if (!ret) {
-            dialogue_msg( "Update Completed",
-                  "Configuration files were successfully migrated. Naev will now restart." );
-            execv(argv[0], argv);
-         }
-         else { /* I sincerely hope this else is never hit. */
-            dialogue_alert( "The update script encountered an error. Please exit Naev and move your config and save files manually:\n\n"
-                  "\er%s/%s\e0 =>\n   \eD%s\e0\n\n"
-                  "\er%s/%s\e0 =>\n   \eD%s\e0\n\n"
-                  "\er%s/%s\e0 =>\n   \eD%snebula/\e0\n\n",
-                  home, ".naev/conf.lua", nfile_configPath(),
-                  home, ".naev/{saves,screenshots}/", nfile_dataPath(),
-                  home, ".naev/gen/*.png", nfile_cachePath() );
-         }
-      }
-      else {
-         dialogue_alert(
-               "To manually migrate your configuration files "
-               "please exit Naev and run the update script, "
-               "likely found in your Naev data directory:\n"
-               "   \er%s/naev-confupdate.sh\e0", home, path );
-      }
-   }
-#endif
-
-   /*
-    * main loop
-    */
-   SDL_Event event;
-   /* flushes the event loop since I noticed that when the joystick is loaded it
-    * creates button events that results in the player starting out acceling */
-   while (SDL_PollEvent(&event));
-   /* primary loop */
-   while (!quit) {
+void main_loop1(void) {
+      SDL_Event event;
       while (SDL_PollEvent(&event)) { /* event loop */
          if (event.type == SDL_QUIT) {
             if (menu_askQuit()) {
@@ -481,72 +394,11 @@ int main( int argc, char** argv )
                break;
             }
          }
-#if SDL_VERSION_ATLEAST(2,0,0)
-         else if (event.type == SDL_WINDOWEVENT &&
-               event.window.event == SDL_WINDOWEVENT_RESIZED) {
-            naev_resize( event.window.data1, event.window.data2 );
-            continue;
-         }
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+         //naev_resize(-1, -1);
          input_handle(&event); /* handles all the events and player keybinds */
       }
 
       main_loop( 1 );
-   }
-
-
-   /* Save configuration. */
-   conf_saveConfig(buf);
-
-   /* data unloading */
-   unload_all();
-
-   /* cleanup opengl fonts */
-   gl_freeFont(NULL);
-   gl_freeFont(&gl_smallFont);
-   gl_freeFont(&gl_defFontMono);
-
-   /* Close data. */
-   ndata_close();
-   start_cleanup();
-
-   /* Destroy conf. */
-   conf_cleanup(); /* Frees some memory the configuration allocated. */
-
-   /* exit subsystems */
-   cli_exit(); /* Clean up the console. */
-   map_exit(); /* Destroys the map. */
-   ovr_mrkFree(); /* Clear markers. */
-   toolkit_exit(); /* Kills the toolkit */
-   ai_exit(); /* Stops the Lua AI magic */
-   joystick_exit(); /* Releases joystick */
-   input_exit(); /* Cleans up keybindings */
-   nebu_exit(); /* Destroys the nebula */
-   lua_exit(); /* Closes Lua state. */
-   gl_exit(); /* Kills video output */
-   sound_exit(); /* Kills the sound */
-   news_exit(); /* Destroys the news. */
-
-   /* Free the icon. */
-   if (naev_icon)
-      SDL_FreeSurface(naev_icon);
-
-   SDL_Quit(); /* quits SDL */
-
-   /* Clean up parser. */
-   xmlCleanupParser();
-
-   /* Clean up signal handler. */
-   debug_sigClose();
-
-   /* Last free. */
-   free(binary_path);
-
-   /* Delete logs if empty. */
-   log_clean();
-
-   /* all is well */
-   exit(EXIT_SUCCESS);
 }
 
 
@@ -678,41 +530,102 @@ static void loadscreen_unload (void)
  * @brief Loads all the data, makes main() simpler.
  */
 #define LOADING_STAGES     12. /**< Amount of loading stages. */
-void load_all (void)
+void load_all (void *var)
 {
-   /* We can do fast stuff here. */
-   sp_load();
+   switch((int)var) {
+      case 0:
+         /* We can do fast stuff here. */
+         sp_load();
 
-   /* order is very important as they're interdependent */
-   loadscreen_render( 1./LOADING_STAGES, "Loading Commodities..." );
-   commodity_load(); /* dep for space */
-   loadscreen_render( 2./LOADING_STAGES, "Loading Factions..." );
-   factions_load(); /* dep for fleet, space, missions, AI */
-   loadscreen_render( 3./LOADING_STAGES, "Loading AI..." );
-   ai_load(); /* dep for fleets */
-   loadscreen_render( 4./LOADING_STAGES, "Loading Missions..." );
-   missions_load(); /* no dep */
-   loadscreen_render( 5./LOADING_STAGES, "Loading Events..." );
-   events_load(); /* no dep */
-   loadscreen_render( 6./LOADING_STAGES, "Loading Special Effects..." );
-   spfx_load(); /* no dep */
-   loadscreen_render( 6./LOADING_STAGES, "Loading Damage Types..." );
-   dtype_load(); /* no dep */
-   loadscreen_render( 7./LOADING_STAGES, "Loading Outfits..." );
-   outfit_load(); /* dep for ships */
-   loadscreen_render( 8./LOADING_STAGES, "Loading Ships..." );
-   ships_load(); /* dep for fleet */
-   loadscreen_render( 9./LOADING_STAGES, "Loading Fleets..." );
-   fleet_load(); /* dep for space */
-   loadscreen_render( 10./LOADING_STAGES, "Loading Techs..." );
-   tech_load(); /* dep for space */
-   loadscreen_render( 11./LOADING_STAGES, "Loading the Universe..." );
-   space_load();
-   loadscreen_render( 12./LOADING_STAGES, "Populating Maps..." );
-   outfit_mapParse();
-   background_init();
-   player_init(); /* Initialize player stuff. */
-   loadscreen_render( 1., "Loading Completed!" );
+         /* order is very important as they're interdependent */
+         loadscreen_render( 1./LOADING_STAGES, "Loading Commodities..." );
+         break;
+      case 1:
+         commodity_load(); /* dep for space */
+         loadscreen_render( 2./LOADING_STAGES, "Loading Factions..." );
+         break;
+      case 2:
+         factions_load(); /* dep for fleet, space, missions, AI */
+         loadscreen_render( 3./LOADING_STAGES, "Loading AI..." );
+         break;
+      case 3:
+         ai_load(); /* dep for fleets */
+         loadscreen_render( 4./LOADING_STAGES, "Loading Missions..." );
+         break;
+      case 4:
+         missions_load(); /* no dep */
+         loadscreen_render( 5./LOADING_STAGES, "Loading Events..." );
+         break;
+      case 5:
+         events_load(); /* no dep */
+         loadscreen_render( 6./LOADING_STAGES, "Loading Special Effects..." );
+         break;
+      case 6:
+         spfx_load(); /* no dep */
+         loadscreen_render( 6./LOADING_STAGES, "Loading Damage Types..." );
+         break;
+      case 7:
+         dtype_load(); /* no dep */
+         loadscreen_render( 7./LOADING_STAGES, "Loading Outfits..." );
+         break;
+      case 8:
+         outfit_load(); /* dep for ships */
+         loadscreen_render( 8./LOADING_STAGES, "Loading Ships..." );
+         break;
+      case 9:
+         ships_load(); /* dep for fleet */
+         loadscreen_render( 9./LOADING_STAGES, "Loading Fleets..." );
+         break;
+      case 10:
+         fleet_load(); /* dep for space */
+         loadscreen_render( 10./LOADING_STAGES, "Loading Techs..." );
+         break;
+      case 11:
+         tech_load(); /* dep for space */
+         loadscreen_render( 11./LOADING_STAGES, "Loading the Universe..." );
+         break;
+      case 12:
+         space_load();
+         loadscreen_render( 12./LOADING_STAGES, "Populating Maps..." );
+         break;
+      case 13:
+         outfit_mapParse();
+         background_init();
+         player_init(); /* Initialize player stuff. */
+         loadscreen_render( 1., "Loading Completed!" );
+         break;
+      case 14:
+#if SDL_VERSION_ATLEAST(2,0,0)
+         /* Detect size changes that occurred during load. */
+         naev_resize( -1., -1. );
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+
+         /* Generate the CSV. */
+         if (conf.devcsv)
+            dev_csv();
+
+         /* Unload load screen. */
+         loadscreen_unload();
+
+         /* Start menu. */
+         menu_main();
+
+         /* Force a minimum delay with loading screen */
+         //if ((SDL_GetTicks() - time_ms) < NAEV_INIT_DELAY)
+         //   SDL_Delay( NAEV_INIT_DELAY - (SDL_GetTicks() - time_ms) );
+         fps_init(); /* initializes the time_ms */
+
+         /* flushes the event loop since I noticed that when the joystick is loaded it
+          * creates button events that results in the player starting out acceling */
+         SDL_Event event;
+         while (SDL_PollEvent(&event));
+         break;
+   }
+
+   if ((int)var < 14)
+      emscripten_async_call(load_all, (void*)(((int)var)+1), 0);
+   else
+      emscripten_set_main_loop(main_loop1, 0, 1);
 }
 /**
  * @brief Unloads all data, simplifies main().
@@ -754,7 +667,7 @@ void main_loop( int update )
    /*
     * Control FPS.
     */
-   fps_control(); /* everyone loves fps control */
+   //fps_control(); /* everyone loves fps control */
 
    /*
     * Handle update.

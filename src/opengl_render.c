@@ -374,7 +374,7 @@ static void gl_blitTextureInterpolate(  const glTexture* ta,
    }
 
    /* No multitexture. */
-   if (nglActiveTexture == NULL) {
+   if (1) {
       if (inter > 0.5)
          gl_blitTexture( ta, x, y, w, h, tx, ty, tw, th, c );
       else

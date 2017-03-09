@@ -238,7 +238,7 @@ int sound_al_init (void)
       al_info.efx = AL_FALSE;
 
    /* Create the OpenAL context */
-   al_context = alcCreateContext( al_device, attribs );
+   al_context = alcCreateContext( al_device, NULL );
    if (al_context == NULL) {
       WARN("Unable to create OpenAL context");
       ret = -2;
