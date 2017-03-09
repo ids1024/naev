@@ -45,7 +45,7 @@ emconfigure ./configure --disable-debug --without-openal --disable-sdltest
 
 emmake make
 
-if [ ! -f "SDL2_mixer-$SDL_MIXER_VERSION" ]; then
+if [ ! -f naev.bc ]; then
     ln -s src/naev naev.bc
 fi
 
