@@ -21,7 +21,7 @@ if [ ! -d "SDL2_mixer-$SDL_MIXER_VERSION" ]; then
     wget https://www.libsdl.org/projects/SDL_mixer/release/SDL2_mixer-$SDL_MIXER_VERSION.tar.gz
     tar -xf SDL2_mixer-$SDL_MIXER_VERSION.tar.gz
     cd SDL2_mixer-$SDL_MIXER_VERSION
-    emconfigure ./configure
+    emconfigure ./configure --disable-sdltest
     emmake make
     cd ..
 fi
