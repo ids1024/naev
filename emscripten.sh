@@ -41,10 +41,12 @@ export PNG_LIBS=" "
 export SDLMIXER_CFLAGS="-I/$PWD/lib/SDL2_mixer-$SDL_MIXER_VERSION"
 export SDLMIXER_LIBS=" "
 
-emconfigure ./configure --disable-debug --without-openal
+emconfigure ./configure --disable-debug --without-openal --disable-sdltest
 
 emmake make
 
-cp src/naev naev.bc
+if [ ! -f "SDL2_mixer-$SDL_MIXER_VERSION" ]; then
+    ln -s src/naev naev.bc
+fi
 
 emcc -s ALLOW_MEMORY_GROWTH=1 -s USE_VORBIS=1 -s USE_OGG=1 -s USE_SDL=2 -s USE_LIBPNG=1 -s LEGACY_GL_EMULATION=1 -s USE_FREETYPE=1 lib/csparse/libcsparse.a lib/libxml2-$LIBXML_VERSION/.libs/libxml2.so lib/SDL2_mixer-$SDL_MIXER_VERSION/build/.libs/libSDL2_mixer.so naev.bc --preload-file dat --preload-file AUTHORS -o naev.html
