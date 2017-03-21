@@ -276,6 +276,9 @@ PKG_CHECK_MODULES([VORBISFILE], [vorbisfile])
 # libpng
 PKG_CHECK_MODULES([PNG], [libpng])
 
+# libzip
+PKG_CHECK_MODULES([ZIP], [libzip])
+
 # lua
 case "$used_lua" in
   luajit)
