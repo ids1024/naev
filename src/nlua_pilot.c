@@ -95,6 +95,7 @@ static int pilotL_broadcast( lua_State *L );
 static int pilotL_comm( lua_State *L );
 static int pilotL_setFaction( lua_State *L );
 static int pilotL_setHostile( lua_State *L );
+static int pilotL_setBribed( lua_State *L );
 static int pilotL_setFriendly( lua_State *L );
 static int pilotL_setInvincible( lua_State *L );
 static int pilotL_setInvincPlayer( lua_State *L );
@@ -150,6 +151,7 @@ static int pilotL_leader( lua_State *L );
 static int pilotL_setLeader( lua_State *L );
 static int pilotL_followers( lua_State *L );
 static int pilotL_hookClear( lua_State *L );
+static int pilotL_refuel( lua_State *L );
 static const luaL_reg pilotL_methods[] = {
    /* General. */
    { "addRaw", pilotL_addFleetRaw },
@@ -200,6 +202,7 @@ static const luaL_reg pilotL_methods[] = {
    { "setDir", pilotL_setDir },
    { "setFaction", pilotL_setFaction },
    { "setHostile", pilotL_setHostile },
+   { "setBribed", pilotL_setBribed },
    { "setFriendly", pilotL_setFriendly },
    { "setInvincible", pilotL_setInvincible },
    { "setInvincPlayer", pilotL_setInvincPlayer },
@@ -247,6 +250,7 @@ static const luaL_reg pilotL_methods[] = {
    { "setLeader", pilotL_setLeader },
    { "followers", pilotL_followers },
    { "hookClear", pilotL_hookClear },
+   { "refuel", pilotL_refuel },
    {0,0}
 }; /**< Pilot metatable methods. */
 
@@ -2018,6 +2022,39 @@ static int pilotL_setHostile( lua_State *L )
 
 
 /**
+ * @brief Sets pilot as bribed by the player.
+ *
+ *    @luatparam Pilot p Pilot to set the bribe state of.
+ *    @luatparam[opt=true] boolean state Whether to set or unset bribed.
+ * @luafunc setBribed( p, state )
+ */
+static int pilotL_setBribed( lua_State *L )
+{
+   Pilot *p;
+   int state;
+
+   NLUA_CHECKRW(L);
+
+   /* Get the pilot. */
+   p = luaL_validpilot(L,1);
+
+   /* Get state. */
+   if (lua_gettop(L) > 1)
+      state = lua_toboolean(L, 2);
+   else
+      state = 1;
+
+   /* Set as hostile. */
+   if (state)
+      pilot_setFlag(p, PILOT_BRIBED);
+   else
+      pilot_rmFlag(p, PILOT_BRIBED);
+
+   return 0;
+}
+
+
+/**
  * @brief Controls the pilot's friendliness towards the player.
  *
  * @usage p:setFriendly() -- Pilot is now friendly.
@@ -3390,6 +3427,7 @@ static const struct pL_flag pL_flags[] = {
    { .name = "manualcontrol", .id = PILOT_MANUAL_CONTROL },
    { .name = "combat", .id = PILOT_COMBAT },
    { .name = "carried", .id = PILOT_CARRIED },
+   { .name = "bribed", .id = PILOT_BRIBED },
    {NULL, -1}
 }; /**< Flags to get. */
 /**
@@ -3417,6 +3455,7 @@ static const struct pL_flag pL_flags[] = {
  *  <li> takingoff: pilot is currently taking off.</li>
  *  <li> manualcontrol: pilot is under manual control.</li>
  *  <li> combat: pilot is engaged in combat.</li>
+ *  <li> bribed: pilot has been bribed by the player.</li>
  * </ul>
  *    @luatparam Pilot p Pilot to get flags of.
  *    @luatreturn table Table with flag names an index, boolean as value.
@@ -4201,3 +4240,26 @@ static int pilotL_hookClear( lua_State *L )
 }
 
 
+/**
+ * @brief Refuel the player.
+ *
+ *    @luatparam Pilot p Pilot to refuel the player.
+ * @luafunc refuel( p )
+ */
+static int pilotL_refuel( lua_State *L )
+{
+   Pilot *p;
+
+   NLUA_CHECKRW(L);
+
+   /* Get the pilot. */
+   p = luaL_validpilot(L,1);
+
+   pilot_rmFlag(p, PILOT_HYP_PREP);
+   pilot_rmFlag(p, PILOT_HYP_BRAKE);
+   pilot_rmFlag(p, PILOT_HYP_BEGIN);
+   pilot_setFlag(p, PILOT_REFUELING);
+   ai_refuel(p, player.p->id);
+
+   return 0;
+}

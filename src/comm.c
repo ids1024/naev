@@ -55,11 +55,8 @@ static unsigned int comm_open( glTexture *gfx, int faction,
 static unsigned int comm_openPilotWindow (void);
 static void comm_addPilotSpecialButtons( unsigned int wid );
 static void comm_close( unsigned int wid, char *unused );
-static void comm_bribePilot( unsigned int wid, char *unused );
 static void comm_bribePlanet( unsigned int wid, char *unused );
-static void comm_requestFuel( unsigned int wid, char *unused );
 static void comm_luaButton( unsigned int wid, char *name );
-static int comm_getNumber( double *val, char* str );
 static const char* comm_getString( char *str );
 
 
@@ -204,19 +201,6 @@ static void comm_addPilotSpecialButtons( unsigned int wid )
    char *name, *label;
    int i;
 
-   window_addButton( wid, -20, 20 + BUTTON_HEIGHT + 20,
-         BUTTON_WIDTH, BUTTON_HEIGHT, "btnGreet", "Greet", NULL );
-
-   if (!pilot_isFlag(comm_pilot, PILOT_BRIBED) && /* Not already bribed. */
-         ((faction_getPlayer( comm_pilot->faction ) < 0) || /* Hostile. */
-            pilot_isHostile(comm_pilot)))
-      window_addButton( wid, -20, 20 + 2*BUTTON_HEIGHT + 40,
-            BUTTON_WIDTH, BUTTON_HEIGHT, "btnBribe", "Bribe", comm_bribePilot );
-   else
-      window_addButton( wid, -20, 20 + 2*BUTTON_HEIGHT + 40,
-            BUTTON_WIDTH, BUTTON_HEIGHT, "btnRequest",
-            "Refuel", comm_requestFuel );
-
    /* Handlers registered in ai Lua script */
    nlua_getenv(comm_pilot->ai->env, "comm_handlers");
    if (nlua_pcall(comm_pilot->ai->env, 0, 1)) {
@@ -233,7 +217,7 @@ static void comm_addPilotSpecialButtons( unsigned int wid )
       return;
    }
 
-   i = 3;
+   i = 1;
    lua_pushnil(naevL);
    while (lua_next(naevL, -2) != 0) {
       label = strdup(lua_tostring(naevL, -2));
@@ -445,89 +429,6 @@ static void comm_close( unsigned int wid, char *unused )
 
 
 /**
- * @brief Tries to bribe the pilot.
- *
- *    @param wid ID of window calling the function.
- *    @param unused Unused.
- */
-static void comm_bribePilot( unsigned int wid, char *unused )
-{
-   (void) unused;
-   int answer;
-   double d;
-   credits_t price;
-   const char *str;
-
-   /* Unbribable. */
-   str = comm_getString( "bribe_no" );
-   if (str != NULL) {
-      dialogue_msg("Bribe Pilot", "%s", str );
-      return;
-   }
-
-   /* Get amount pilot wants. */
-   if (comm_getNumber( &d, "bribe" )) {
-      WARN("Pilot '%s' accepts bribes but doesn't give price!", comm_pilot->name );
-      d = 0.;
-   }
-   price = (credits_t) d;
-
-   /* Check to see if already bribed. */
-   if (price == 0) {
-      dialogue_msg("Bribe Pilot", "\"Money won't save your hide now!\"");
-      return;
-   }
-
-   /* Bribe message. */
-   str = comm_getString( "bribe_prompt" );
-   if (str == NULL)
-      answer = dialogue_YesNo( "Bribe Pilot", "\"I'm gonna need at least %"CREDITS_PRI" credits to not leave you as a hunk of floating debris.\"\n\nPay %"CREDITS_PRI" credits?", price, price );
-   else
-      answer = dialogue_YesNo( "Bribe Pilot", "%s\n\nPay %"CREDITS_PRI" credits?", str, price );
-
-   /* Said no. */
-   if (answer == 0) {
-      dialogue_msg("Bribe Pilot", "You decide not to pay.");
-      return;
-   }
-
-   /* Check if has the money. */
-   if (!player_hasCredits( price )) {
-      dialogue_msg("Bribe Pilot", "You don't have enough credits for the bribery.");
-      return;
-   }
-
-   player_modCredits( -price );
-   str = comm_getString( "bribe_paid" );
-   if (str == NULL)
-      dialogue_msg("Bribe Pilot", "\"Pleasure to do business with you.\"");
-   else
-      dialogue_msg("Bribe Pilot", "%s", str);
-
-   /* Mark as bribed and don't allow bribing again. */
-   pilot_setFlag( comm_pilot, PILOT_BRIBED );
-   pilot_rmHostile( comm_pilot );
-
-   /* Stop hyperspace if necessary. */
-   pilot_rmFlag( comm_pilot, PILOT_HYP_PREP );
-   pilot_rmFlag( comm_pilot, PILOT_HYP_BRAKE );
-   pilot_rmFlag( comm_pilot, PILOT_HYP_BEGIN );
-
-   /* Don't allow rebribe. */
-   if (comm_pilot->ai != NULL) {
-      nlua_getenv(comm_pilot->ai->env, "mem");
-      lua_pushnumber(naevL, 0);
-      lua_setfield(naevL, -2, "bribe");
-      lua_pop(naevL,1);
-   }
-
-   /* Reopen window. */
-   window_destroy( wid );
-   comm_openPilot( comm_pilot->id );
-}
-
-
-/**
  * @brief Tries to bribe the planet
  *
  *    @param wid ID of window calling the function.
@@ -577,91 +478,6 @@ static void comm_bribePlanet( unsigned int wid, char *unused )
 
 
 /**
- * @brief Tries to request help from the pilot.
- *
- *    @param wid ID of window calling the function.
- *    @param unused Unused.
- */
-static void comm_requestFuel( unsigned int wid, char *unused )
-{
-   (void) wid;
-   (void) unused;
-   double val;
-   const char *msg;
-   int ret;
-   credits_t price;
-
-   /* Check to see if ship has a no refuel message. */
-   msg = comm_getString( "refuel_no" );
-   if (msg != NULL) {
-      dialogue_msg( "Request Fuel", msg );
-      return;
-   }
-
-   /* Must need refueling. */
-   if (player.p->fuel >= player.p->fuel_max) {
-      dialogue_msg( "Request Fuel", "Your fuel deposits are already full." );
-      return;
-   }
-
-   /* See if pilot has enough fuel. */
-   if (comm_pilot->fuel < 200.) {
-      dialogue_msg( "Request Fuel",
-            "\"Sorry, I don't have enough fuel to spare at the moment.\"" );
-      return;
-   }
-
-   /* See if player can get refueled. */
-   ret = comm_getNumber( &val, "refuel" );
-   msg = comm_getString( "refuel_msg" );
-   if ((ret != 0) || (msg == NULL) || pilot_isFlag(comm_pilot, PILOT_MANUAL_CONTROL)) {
-      dialogue_msg( "Request Fuel", "\"Sorry, I'm busy now.\"" );
-      return;
-   }
-   price = (credits_t) val;
-
-   /* Check to see if is already refueling. */
-   if (pilot_isFlag(comm_pilot, PILOT_REFUELING)) {
-      dialogue_msg( "Request Fuel", "Pilot is already refueling you." );
-      return;
-   }
-
-   /* See if player really wants to pay. */
-   if (price > 0) {
-      ret = dialogue_YesNo( "Request Fuel", "%s\n\nPay %"CREDITS_PRI" credits?", msg, price );
-      if (ret == 0) {
-         dialogue_msg( "Request Fuel", "You decide not to pay." );
-         return;
-      }
-   }
-   else
-      dialogue_msg( "Request Fuel", "%s", msg );
-
-   /* Check if he has the money. */
-   if (!player_hasCredits( price )) {
-      dialogue_msg( "Request Fuel", "You need %"CREDITS_PRI" more credits!",
-            price - player.p->credits);
-      return;
-   }
-
-   /* Take money. */
-   player_modCredits( -price );
-   pilot_modCredits( comm_pilot, price );
-
-   /* Start refueling. */
-   pilot_rmFlag(  comm_pilot, PILOT_HYP_PREP);
-   pilot_rmFlag(  comm_pilot, PILOT_HYP_BRAKE );
-   pilot_rmFlag(  comm_pilot, PILOT_HYP_BEGIN);
-   pilot_setFlag( comm_pilot, PILOT_REFUELING);
-   ai_refuel(     comm_pilot, player.p->id );
-
-   /* Last message. */
-   if (price > 0)
-      dialogue_msg( "Request Fuel", "\"On my way.\"" );
-}
-
-
-/**
  * @brief Calls Lua function registered in AI script.
  *
  *    @param wid ID of window calling the function.
@@ -678,42 +494,6 @@ static void comm_luaButton( unsigned int wid, char *name ){
       lua_pop(naevL,1);
    }
    lua_pop(naevL, 1);
-}
-
-
-/**
- * @brief Gets the amount the communicating pilot wants as a bribe.
- *
- * Valid targets for now are:
- *    - "bribe": amount pilot wants to be paid.
- *    - "refuel": amount pilot wants to be paid for refueling the player.
- *
- *    @param[out] val Value of the number gotten.
- *    @param str Name of number to get.
- *    @return 0 for success, 1 on error (including not found).
- */
-static int comm_getNumber( double *val, char* str )
-{
-   int ret;
-
-   if (comm_pilot->ai == NULL)
-      return 1;
-
-   /* Set up the state. */
-   nlua_getenv(comm_pilot->ai->env, "mem");
-
-   /* Get number amount. */
-   lua_getfield(naevL, -1, str);
-   /* Check to see if it's a number. */
-   if (!lua_isnumber(naevL, -1))
-      ret = 1;
-   else {
-      *val = lua_tonumber(naevL, -1);
-      ret = 0;
-   }
-   /* Clean up. */
-   lua_pop(naevL, 2);
-   return ret;
 }
 
 

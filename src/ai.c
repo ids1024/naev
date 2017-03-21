@@ -90,6 +90,7 @@
 #include "nlua_pilot.h"
 #include "nlua_planet.h"
 #include "nlua_faction.h"
+#include "nlua_tk.h"
 #include "board.h"
 #include "hook.h"
 #include "array.h"
@@ -647,6 +648,7 @@ static int ai_loadProfile( const char* filename )
    /* Create Lua. */
    env = nlua_newEnv(1);
    nlua_loadStandard(env);
+   nlua_loadTk(env);
    prof->env = env;
 
    /* Register C functions in Lua */

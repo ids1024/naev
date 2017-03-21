@@ -1,5 +1,6 @@
 include("dat/ai/include/basic.lua")
 include("dat/ai/include/attack.lua")
+include("dat/ai/include/comm.lua")
 local formation = include("dat/scripts/formation.lua")
 
 --[[
@@ -567,10 +568,4 @@ function flyback ()
    elseif dir < 10 then
       ai.accel()
    end
-end
-
-
-function comm_handlers ()
-   local handlers = {}
-   return handlers
 end
