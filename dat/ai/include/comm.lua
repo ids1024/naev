@@ -91,6 +91,11 @@ end
 
 
 function comm_handlers ()
+   if mem.comm_no then
+      player.msg(mem.comm_no)
+      return
+   end
+
    local handlers = {}
    if ai.pilot():hostile() and not ai.pilot():flags().bribed then
       handlers["Bribe"] = comm_bribe

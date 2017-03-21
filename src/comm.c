@@ -57,7 +57,6 @@ static void comm_addPilotSpecialButtons( unsigned int wid );
 static void comm_close( unsigned int wid, char *unused );
 static void comm_bribePlanet( unsigned int wid, char *unused );
 static void comm_luaButton( unsigned int wid, char *name );
-static const char* comm_getString( char *str );
 
 
 /**
@@ -88,7 +87,6 @@ void comm_queueClose (void)
  */
 int comm_openPilot( unsigned int pilot )
 {
-   const char *msg;
    char c;
    unsigned int wid;
    int run;
@@ -131,15 +129,28 @@ int comm_openPilot( unsigned int pilot )
       return 0;
    }
 
-   /* Check to see if pilot wants to communicate. */
-   msg = comm_getString( "comm_no" );
-   if (msg != NULL) {
-      player_message( msg );
+   /* Set up for the comm_get* functions. */
+   ai_setPilot( comm_pilot );
+
+
+   /* Run AI's comm_handlers() */
+   nlua_getenv(comm_pilot->ai->env, "comm_handlers");
+   if (nlua_pcall(comm_pilot->ai->env, 0, 1)) {
+      WARN("comm_handlers() for pilot '%s' : %s",
+            comm_pilot->name, lua_tostring(naevL,-1));
+      lua_pop(naevL,1);
       return 0;
    }
 
-   /* Set up for the comm_get* functions. */
-   ai_setPilot( comm_pilot );
+   if (!lua_istable(naevL, -1)) {
+      if (!lua_isnil(naevL, -1))
+         WARN("comm_handlers() for pilot '%s' did not return a table",
+               comm_pilot->name);
+      lua_pop(naevL,1);
+      return 0;
+   }
+
+   comm_handlers = luaL_ref(naevL, LUA_REGISTRYINDEX);
 
    /* Have pilot stop hailing. */
    pilot_rmFlag( comm_pilot, PILOT_HAILING );
@@ -201,21 +212,7 @@ static void comm_addPilotSpecialButtons( unsigned int wid )
    char *name, *label;
    int i;
 
-   /* Handlers registered in ai Lua script */
-   nlua_getenv(comm_pilot->ai->env, "comm_handlers");
-   if (nlua_pcall(comm_pilot->ai->env, 0, 1)) {
-      WARN("comm_handlers() for pilot '%s' : %s",
-            comm_pilot->name, lua_tostring(naevL,-1));
-      lua_pop(naevL,1);
-      return;
-   }
-
-   if (!lua_istable(naevL, -1)) {
-      WARN("comm_handlers() for pilot '%s' did not return a table",
-            comm_pilot->name);
-      lua_pop(naevL,1);
-      return;
-   }
+   lua_rawgeti(naevL, LUA_REGISTRYINDEX, comm_handlers);
 
    i = 1;
    lua_pushnil(naevL);
@@ -233,7 +230,8 @@ static void comm_addPilotSpecialButtons( unsigned int wid )
       lua_pop(naevL, 1);
       i++;
    }
-   comm_handlers = luaL_ref(naevL, LUA_REGISTRYINDEX);
+
+   lua_pop(naevL, 1);
 }
 
 
@@ -495,38 +493,3 @@ static void comm_luaButton( unsigned int wid, char *name ){
    }
    lua_pop(naevL, 1);
 }
-
-
-/**
- * @brief Gets a string from the pilot's memory.
- *
- * Valid targets are:
- *    - comm_no: message of communication failure.
- *    - bribe_no: unbribe message
- *    - bribe_prompt: bribe prompt
- *    - bribe_paid: paid message
- *
- *    @param str String to get.
- *    @return String matching str.
- */
-static const char* comm_getString( char *str )
-{
-   const char *ret;
-
-   if (comm_pilot->ai == NULL)
-      return NULL;
-
-   /* Get memory table. */
-   nlua_getenv(comm_pilot->ai->env, "mem");
-
-   /* Get str message. */
-   lua_getfield(naevL, -1, str );
-   if (!lua_isstring(naevL, -1))
-      ret = NULL;
-   else
-      ret = lua_tostring(naevL, -1);
-   lua_pop(naevL, 2);
-
-   return ret;
-}
-
