@@ -29,7 +29,7 @@ export VORBISFILE_LIBS=" "
 export PNG_CFLAGS="-s USE_LIBPNG=1"
 export PNG_LIBS=" "
 
-emconfigure ./configure --disable-debug --disable-sdltest --enable-debug=no
+emconfigure ./configure --disable-debug --disable-sdltest --enable-debug=no --without-libzip
 
 emmake make
 
