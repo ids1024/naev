@@ -38,6 +38,7 @@ static Pilot *comm_pilot       = NULL; /**< Pilot currently talking to. */
 static Planet *comm_planet     = NULL; /**< Planet currently talking to. */
 static glTexture *comm_graphic = NULL; /**< Pilot's graphic. */
 static int comm_commClose      = 0; /**< Close comm when done. */
+static int comm_handlers       = LUA_NOREF;
 
 
 /* We need direct pilot access. */
@@ -57,6 +58,7 @@ static void comm_close( unsigned int wid, char *unused );
 static void comm_bribePilot( unsigned int wid, char *unused );
 static void comm_bribePlanet( unsigned int wid, char *unused );
 static void comm_requestFuel( unsigned int wid, char *unused );
+static void comm_luaButton( unsigned int wid, char *name );
 static int comm_getNumber( double *val, char* str );
 static const char* comm_getString( char *str );
 
@@ -199,8 +201,12 @@ static unsigned int comm_openPilotWindow (void)
  */
 static void comm_addPilotSpecialButtons( unsigned int wid )
 {
+   char *name, *label;
+   int i;
+
    window_addButton( wid, -20, 20 + BUTTON_HEIGHT + 20,
          BUTTON_WIDTH, BUTTON_HEIGHT, "btnGreet", "Greet", NULL );
+
    if (!pilot_isFlag(comm_pilot, PILOT_BRIBED) && /* Not already bribed. */
          ((faction_getPlayer( comm_pilot->faction ) < 0) || /* Hostile. */
             pilot_isHostile(comm_pilot)))
@@ -210,6 +216,40 @@ static void comm_addPilotSpecialButtons( unsigned int wid )
       window_addButton( wid, -20, 20 + 2*BUTTON_HEIGHT + 40,
             BUTTON_WIDTH, BUTTON_HEIGHT, "btnRequest",
             "Refuel", comm_requestFuel );
+
+   /* Handlers registered in ai Lua script */
+   nlua_getenv(comm_pilot->ai->env, "comm_handlers");
+   if (nlua_pcall(comm_pilot->ai->env, 0, 1)) {
+      WARN("comm_handlers() for pilot '%s' : %s",
+            comm_pilot->name, lua_tostring(naevL,-1));
+      lua_pop(naevL,1);
+      return;
+   }
+
+   if (!lua_istable(naevL, -1)) {
+      WARN("comm_handlers() for pilot '%s' did not return a table",
+            comm_pilot->name);
+      lua_pop(naevL,1);
+      return;
+   }
+
+   i = 3;
+   lua_pushnil(naevL);
+   while (lua_next(naevL, -2) != 0) {
+      label = strdup(lua_tostring(naevL, -2));
+      name = malloc(strlen(label) + 7);
+      strcpy(name, "btnLua");
+      strcat(name, label);
+
+      window_addButton( wid, -20, 20 + i * (BUTTON_HEIGHT + 20), 
+            BUTTON_WIDTH, BUTTON_HEIGHT, name, label, comm_luaButton);
+
+      free(label);
+      free(name);
+      lua_pop(naevL, 1);
+      i++;
+   }
+   comm_handlers = luaL_ref(naevL, LUA_REGISTRYINDEX);
 }
 
 
@@ -397,6 +437,8 @@ static void comm_close( unsigned int wid, char *unused )
    }
    comm_pilot  = NULL;
    comm_planet = NULL;
+   luaL_unref(naevL, LUA_REGISTRYINDEX, comm_handlers);
+   comm_handlers = LUA_NOREF;
    /* Close the window. */
    window_close( wid, unused );
 }
@@ -616,6 +658,26 @@ static void comm_requestFuel( unsigned int wid, char *unused )
    /* Last message. */
    if (price > 0)
       dialogue_msg( "Request Fuel", "\"On my way.\"" );
+}
+
+
+/**
+ * @brief Calls Lua function registered in AI script.
+ *
+ *    @param wid ID of window calling the function.
+ *    @param name Name of the widget.
+ */
+static void comm_luaButton( unsigned int wid, char *name ){
+   (void) wid;
+
+   lua_rawgeti(naevL, LUA_REGISTRYINDEX, comm_handlers);
+   lua_getfield(naevL, -1, name + strlen("btnLua"));
+   if (nlua_pcall(comm_pilot->ai->env, 0, 0)) {
+      WARN("Lua comm for pilot '%s' : %s",
+            comm_pilot->name, lua_tostring(naevL,-1));
+      lua_pop(naevL,1);
+   }
+   lua_pop(naevL, 1);
 }
 
 

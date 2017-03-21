@@ -568,3 +568,9 @@ function flyback ()
       ai.accel()
    end
 end
+
+
+function comm_handlers ()
+   local handlers = {}
+   return handlers
+end
