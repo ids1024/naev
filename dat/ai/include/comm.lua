@@ -43,7 +43,7 @@ function comm_refuel ()
    local pilot_flags = ai.pilot():flags()
 
    if mem.refuel_no then
-      tk.msg("Bribe Pilot", mem.refuel_no)
+      tk.msg("Request Fuel", mem.refuel_no)
       return
    end
 
