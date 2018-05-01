@@ -1,0 +1,207 @@
+#define NODE_LENGTH 10
+
+#include <stdlib.h>
+#include <math.h>
+#include <assert.h>
+#include "rtree.h"
+
+struct bounding_rectangle {
+   double x1, x2, y1, y2;
+};
+
+struct rtree_node {
+   enum {
+      INTERNAL_NODE,
+      LEAF_NODE
+   } type;
+   int length;
+   struct bounding_rectangle mbr;
+   struct {
+      struct bounding_rectangle mbr;
+      void *value; /* Pilot if leaf, rtree_node if internal  */
+   } values[NODE_LENGTH];
+};
+
+struct rtree {
+   struct rtree_node *root;
+};
+
+struct rtree *rtree_create() {
+   struct rtree_node *root;
+   struct rtree *tree;
+      
+   root = malloc(sizeof(struct rtree_node));
+   root->type = LEAF_NODE;
+   root->length = 0;
+
+   tree = malloc(sizeof(struct rtree));
+   tree->root = root;
+
+   return tree;
+}
+
+void rtree_free_node(struct rtree_node *node) {
+   int i;
+   if (node->type == INTERNAL_NODE) {
+      for (i=0; i < node->length; i++)
+         rtree_free_node(node->values[i].value);
+   }
+
+   free(node);
+}
+
+void rtree_free(struct rtree *tree) {
+   rtree_free_node(tree->root);
+}
+
+struct bounding_rectangle mbr_add(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+   struct bounding_rectangle mbr;
+   mbr.x1 = fmin(mbr1.x1, mbr2.x1);
+   mbr.x2 = fmax(mbr1.x2, mbr2.x2);
+   mbr.y1 = fmin(mbr1.y1, mbr2.y1);
+   mbr.y2 = fmax(mbr1.y2, mbr2.y2);
+   return mbr;
+}
+
+double mbr_area(struct bounding_rectangle mbr) {
+   return (mbr.x2 - mbr.x1) * (mbr.y2 - mbr.y1);
+}
+
+double mbr_distance(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+   return hypot((mbr1.x1 + mbr1.x2) / 2 - (mbr2.x1 + mbr2.x2) / 2,
+                (mbr1.y1 + mbr1.y2) / 2 - (mbr2.y1 + mbr2.y2) / 2);
+}
+
+struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
+   int i, j, distance, best_distance, best_i, best_j;
+   struct rtree_node *new_node;
+   struct bounding_rectangle tmp_mbr, mbr1, mbr2;
+   void *tmp_value;
+
+   assert(node->length == NODE_LENGTH);
+
+   new_node = malloc(sizeof(struct rtree_node));
+   new_node->type = node->type;
+   
+   // TODO handle ties
+   distance = 0;
+   for (i = -1; i < NODE_LENGTH - 1; i++) {
+      for (j = i+1; j < NODE_LENGTH; j++) {
+         /* Use -1 to represent the value being inserted */
+         if (i == -1)
+            distance = mbr_distance(mbr, node->values[j].mbr);
+         else
+            distance = mbr_distance(node->values[i].mbr, node->values[j].mbr);
+         if (distance > best_distance) {
+            best_i = i;
+            best_j = j;
+            best_distance = distance;
+         }
+      }
+   }
+
+   if (best_j == -1) {
+      new_node->values[0].mbr = mbr;
+      new_node->values[0].value = value;
+   } else {
+      new_node->values[0] = node->values[best_j];
+
+      node->values[best_j].mbr = mbr;
+      node->values[best_j].value = value;
+
+      if (best_i == -1)
+         best_i = best_j;
+   }
+   new_node->mbr = new_node->values[0].mbr;
+   new_node->length = 1;
+
+   tmp_mbr = node->values[0].mbr;
+   tmp_value = node->values[0].value;
+   node->values[0] = node->values[best_i];
+   node->values[best_i].mbr = tmp_mbr;
+   node->values[best_i].value = tmp_value;
+   node->mbr = node->values[0].mbr;
+   node->length = 1;
+
+   for (i = 1; i < NODE_LENGTH; i++) {
+      mbr1 = mbr_add(node->mbr, node->values[i].mbr);
+      mbr2 = mbr_add(new_node->mbr, node->values[i].mbr);
+      if (mbr_area(mbr2) - mbr_area(new_node->mbr) < mbr_area(mbr1) - mbr_area(node->mbr)) {
+         new_node->values[new_node->length++] = new_node->values[i];
+         node->mbr = mbr1;
+      } else {
+         node->values[node->length++] = node->values[i];
+         node->mbr = mbr1;
+      }
+   }
+
+   return new_node;
+}
+
+struct rtree_node *rtree_node_insert(struct rtree_node *node, struct bounding_rectangle mbr, Pilot *pilot) {
+   int best_fit, i;
+   double best_fit_increase, increase;
+   struct rtree_node *new_node;
+
+   if (node->type == LEAF_NODE) {
+      if (node->length < NODE_LENGTH) {
+         node->values[node->length].mbr = mbr;
+         node->values[node->length].value = pilot;
+         node->length++;
+         node->mbr = mbr_add(node->mbr, mbr);
+         return NULL;
+      } else {
+         return rtree_node_split(node, mbr, pilot);
+      }
+   } else {
+      best_fit_increase = INFINITY;
+      // TODO handle ties
+      for (i=0; i < node->length; i++) {
+         increase = mbr_area(mbr_add(node->values[i].mbr, mbr)) - mbr_area(node->values[i].mbr);
+         if (increase < best_fit_increase) {
+            best_fit_increase = increase;
+            best_fit = i;
+         }
+      }
+      new_node = rtree_node_insert(node->values[best_fit].value, mbr, pilot);
+      node->values[best_fit].mbr = ((struct rtree_node*)node->values[best_fit].value)->mbr;
+
+      if (new_node != NULL) {
+         if (node->length < NODE_LENGTH) {
+            node->values[node->length].mbr = new_node->mbr;
+            node->values[node->length].value = new_node;
+            node->length++;
+            node->mbr = mbr_add(node->mbr, mbr);
+            return NULL;
+         } else {
+            return rtree_node_split(node, mbr, new_node);
+         }
+      }
+   }
+}
+
+void rtree_insert(struct rtree *tree, Pilot *pilot) {
+   struct bounding_rectangle mbr;
+   glTexture *gfx_space;
+   struct rtree_node *new_node, *new_root;
+
+   gfx_space = pilot->ship->gfx_space;
+   mbr.x1 = pilot->tsx - (gfx_space->sw / 2);
+   mbr.x2 = pilot->tsx + (gfx_space->sw / 2);
+   mbr.y1 = pilot->tsy - (gfx_space->sh / 2);
+   mbr.y2 = pilot->tsy + (gfx_space->sh / 2);
+
+   new_node = rtree_node_insert(tree->root, mbr, pilot);
+   if (new_node != NULL) {
+      new_root = malloc(sizeof(struct rtree_node));
+      new_root->type = INTERNAL_NODE;
+      new_root->length = 2;
+
+      new_root->values[0].value = tree->root;
+      new_root->values[0].mbr = tree->root->mbr;
+      new_root->values[1].value = new_node;
+      new_root->values[1].mbr = new_node->mbr;
+
+      tree->root = new_root;
+   }
+}

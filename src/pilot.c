@@ -44,6 +44,7 @@
 #include "camera.h"
 #include "damagetype.h"
 #include "pause.h"
+#include "rtree.h"
 
 
 #define PILOT_CHUNK_MIN 128 /**< Minimum chunks to increment pilot_stack by */

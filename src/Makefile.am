@@ -127,6 +127,7 @@ CODE_SOURCE = \
 	player_autonav.c \
 	player_gui.c \
 	queue.c \
+	rtree.c \
 	rng.c \
 	save.c \
 	ship.c \
@@ -271,6 +272,7 @@ CODE_SOURCE = \
 	player_gui.h \
 	queue.h \
 	rng.h \
+	rtree.h \
 	save.h \
 	ship.h \
 	shipstats.h \
