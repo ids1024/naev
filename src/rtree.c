@@ -9,6 +9,11 @@ struct bounding_rectangle {
    double x1, x2, y1, y2;
 };
 
+struct rtree_value {
+   struct bounding_rectangle mbr;
+   void *value; /* Pilot if leaf, rtree_node if internal  */
+};
+
 struct rtree_node {
    enum {
       INTERNAL_NODE,
@@ -16,10 +21,7 @@ struct rtree_node {
    } type;
    int length;
    struct bounding_rectangle mbr;
-   struct {
-      struct bounding_rectangle mbr;
-      void *value; /* Pilot if leaf, rtree_node if internal  */
-   } values[NODE_LENGTH];
+   struct rtree_value values[NODE_LENGTH];
 };
 
 struct rtree {
@@ -75,8 +77,8 @@ double mbr_distance(struct bounding_rectangle mbr1, struct bounding_rectangle mb
 struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
    int i, j, distance, best_distance, best_i, best_j;
    struct rtree_node *new_node;
-   struct bounding_rectangle tmp_mbr, mbr1, mbr2;
-   void *tmp_value;
+   struct bounding_rectangle mbr1, mbr2;
+   struct rtree_value tmp_value;
 
    assert(node->length == NODE_LENGTH);
 
@@ -84,7 +86,7 @@ struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rec
    new_node->type = node->type;
    
    // TODO handle ties
-   distance = 0;
+   best_distance = -1;
    for (i = -1; i < NODE_LENGTH - 1; i++) {
       for (j = i+1; j < NODE_LENGTH; j++) {
          /* Use -1 to represent the value being inserted */
@@ -112,14 +114,14 @@ struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rec
       if (best_i == -1)
          best_i = best_j;
    }
+
+   /* swap node->values[0] and node->values[best_i] */
+   tmp_value = node->values[0];
+   node->values[0] = node->values[best_i];
+   node->values[best_i] = tmp_value;
+
    new_node->mbr = new_node->values[0].mbr;
    new_node->length = 1;
-
-   tmp_mbr = node->values[0].mbr;
-   tmp_value = node->values[0].value;
-   node->values[0] = node->values[best_i];
-   node->values[best_i].mbr = tmp_mbr;
-   node->values[best_i].value = tmp_value;
    node->mbr = node->values[0].mbr;
    node->length = 1;
 
@@ -127,8 +129,8 @@ struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rec
       mbr1 = mbr_add(node->mbr, node->values[i].mbr);
       mbr2 = mbr_add(new_node->mbr, node->values[i].mbr);
       if (mbr_area(mbr2) - mbr_area(new_node->mbr) < mbr_area(mbr1) - mbr_area(node->mbr)) {
-         new_node->values[new_node->length++] = new_node->values[i];
-         node->mbr = mbr1;
+         new_node->values[new_node->length++] = node->values[i];
+         new_node->mbr = mbr2;
       } else {
          node->values[node->length++] = node->values[i];
          node->mbr = mbr1;
@@ -177,6 +179,8 @@ struct rtree_node *rtree_node_insert(struct rtree_node *node, struct bounding_re
             return rtree_node_split(node, mbr, new_node);
          }
       }
+
+      return NULL;
    }
 }
 
