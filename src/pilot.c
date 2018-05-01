@@ -60,6 +60,8 @@ Pilot** pilot_stack = NULL; /**< Not static, used in player.c, weapon.c, pause.c
 int pilot_nstack = 0; /**< same */
 static int pilot_mstack = 0; /**< Memory allocated for pilot_stack. */
 
+static struct rtree *pilot_rtree = NULL;
+
 
 /* misc */
 static double pilot_commTimeout  = 15.; /**< Time for text above pilot to time out. */
@@ -2989,6 +2991,10 @@ void pilots_update( double dt )
          p->think(p, dt);
    }
 
+   if (pilot_rtree != NULL)
+      rtree_free(pilot_rtree);
+   pilot_rtree = rtree_create();
+
    /* Now update all the pilots. */
    for (i=0; i<pilot_nstack; i++) {
       p = pilot_stack[i];
@@ -3004,6 +3010,8 @@ void pilots_update( double dt )
       /* Just update the pilot. */
       if (p->update) /* update */
          p->update( p, dt );
+
+      rtree_insert(pilot_rtree, p);
    }
 }
 
