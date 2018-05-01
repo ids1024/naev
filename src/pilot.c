@@ -60,7 +60,7 @@ Pilot** pilot_stack = NULL; /**< Not static, used in player.c, weapon.c, pause.c
 int pilot_nstack = 0; /**< same */
 static int pilot_mstack = 0; /**< Memory allocated for pilot_stack. */
 
-static struct rtree *pilot_rtree = NULL;
+struct rtree *pilot_rtree = NULL;
 
 
 /* misc */

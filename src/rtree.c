@@ -4,6 +4,7 @@
 #include <math.h>
 #include <assert.h>
 #include "rtree.h"
+#include "physics.h"
 
 struct bounding_rectangle {
    double x1, x2, y1, y2;
@@ -26,6 +27,17 @@ struct rtree_node {
 
 struct rtree {
    struct rtree_node *root;
+   int height;
+};
+
+struct rtree_iter_item {
+   struct rtree_node *node;
+   int index;
+};
+
+struct rtree_iter {
+   struct rtree_iter_item *items;
+   int count;
 };
 
 struct rtree *rtree_create() {
@@ -38,6 +50,7 @@ struct rtree *rtree_create() {
 
    tree = malloc(sizeof(struct rtree));
    tree->root = root;
+   tree->height = 0;
 
    return tree;
 }
@@ -72,6 +85,11 @@ double mbr_area(struct bounding_rectangle mbr) {
 double mbr_distance(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
    return hypot((mbr1.x1 + mbr1.x2) / 2 - (mbr2.x1 + mbr2.x2) / 2,
                 (mbr1.y1 + mbr1.y2) / 2 - (mbr2.y1 + mbr2.y2) / 2);
+}
+
+int mbr_interesect(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+   return !(mbr1.x2 < mbr2.x1 || mbr2.x2 < mbr1.x1 ||
+            mbr1.y2 < mbr2.y1 || mbr2.y2 < mbr1.y1);
 }
 
 struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
@@ -190,10 +208,10 @@ void rtree_insert(struct rtree *tree, Pilot *pilot) {
    struct rtree_node *new_node, *new_root;
 
    gfx_space = pilot->ship->gfx_space;
-   mbr.x1 = pilot->tsx - (gfx_space->sw / 2);
-   mbr.x2 = pilot->tsx + (gfx_space->sw / 2);
-   mbr.y1 = pilot->tsy - (gfx_space->sh / 2);
-   mbr.y2 = pilot->tsy + (gfx_space->sh / 2);
+   mbr.x1 = VX(pilot->solid->pos) - (gfx_space->sw / 2);
+   mbr.x2 = VX(pilot->solid->pos) + (gfx_space->sw / 2);
+   mbr.y1 = VY(pilot->solid->pos) - (gfx_space->sh / 2);
+   mbr.y2 = VY(pilot->solid->pos) + (gfx_space->sh / 2);
 
    new_node = rtree_node_insert(tree->root, mbr, pilot);
    if (new_node != NULL) {
@@ -207,5 +225,56 @@ void rtree_insert(struct rtree *tree, Pilot *pilot) {
       new_root->values[1].mbr = new_node->mbr;
 
       tree->root = new_root;
+      tree->height++;
    }
+}
+
+struct rtree_iter *rtree_begin(struct rtree *tree) {
+   struct rtree_iter *iter = malloc(sizeof(struct rtree_iter));
+   iter->count = tree->height;
+   iter->items = malloc((tree->height + 1) * sizeof(struct rtree_iter_item));
+   iter->items[0].node = tree->root;
+   iter->items[0].index = -1;
+   return iter;
+}
+
+void rtree_iter_free(struct rtree_iter *iter) {
+   free(iter->items);
+   free(iter);
+}
+
+Pilot* rtree_find(struct rtree_iter *iter, double x1, double x2, double y1, double y2) {
+   int level, i;
+   struct rtree_node *node;
+   struct bounding_rectangle mbr = {x1, x2, y1, y2};
+
+   /* Start of iteration */
+   if (iter->items[0].index == -1)
+      level = 0;
+   else
+      level = iter->count - 1;
+
+OUTER:
+   while (level >= 0) {
+      i = iter->items[level].index + 1;
+      node = iter->items[level].node;
+
+      for (; i < node->length; i++) {
+         if (mbr_interesect(mbr, node->values[i].mbr)) {
+            iter->items[level].index = i;
+            if (node->type == LEAF_NODE) {
+               return node->values[i].value;
+            } else {
+               level++;
+               iter->items[level].node = node->values[i].value;
+               iter->items[level].index = 0;
+               goto OUTER;
+            }
+         }
+      }
+
+      level--;
+   }
+
+   return NULL;
 }
