@@ -55,7 +55,7 @@ struct rtree *rtree_create() {
    return tree;
 }
 
-void rtree_free_node(struct rtree_node *node) {
+static void rtree_free_node(struct rtree_node *node) {
    int i;
    if (node->type == INTERNAL_NODE) {
       for (i=0; i < node->length; i++)
@@ -69,7 +69,7 @@ void rtree_free(struct rtree *tree) {
    rtree_free_node(tree->root);
 }
 
-struct bounding_rectangle mbr_add(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+static struct bounding_rectangle mbr_add(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
    struct bounding_rectangle mbr;
    mbr.x1 = fmin(mbr1.x1, mbr2.x1);
    mbr.x2 = fmax(mbr1.x2, mbr2.x2);
@@ -78,21 +78,21 @@ struct bounding_rectangle mbr_add(struct bounding_rectangle mbr1, struct boundin
    return mbr;
 }
 
-double mbr_area(struct bounding_rectangle mbr) {
+static double mbr_area(struct bounding_rectangle mbr) {
    return (mbr.x2 - mbr.x1) * (mbr.y2 - mbr.y1);
 }
 
-double mbr_distance(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+static double mbr_distance(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
    return hypot((mbr1.x1 + mbr1.x2) / 2 - (mbr2.x1 + mbr2.x2) / 2,
                 (mbr1.y1 + mbr1.y2) / 2 - (mbr2.y1 + mbr2.y2) / 2);
 }
 
-int mbr_interesect(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
+static int mbr_interesect(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
    return !(mbr1.x2 < mbr2.x1 || mbr2.x2 < mbr1.x1 ||
             mbr1.y2 < mbr2.y1 || mbr2.y2 < mbr1.y1);
 }
 
-struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
+static struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
    int i, j, distance, best_distance, best_i, best_j;
    struct rtree_node *new_node;
    struct bounding_rectangle mbr1, mbr2;
@@ -158,7 +158,7 @@ struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rec
    return new_node;
 }
 
-struct rtree_node *rtree_node_insert(struct rtree_node *node, struct bounding_rectangle mbr, Pilot *pilot) {
+static struct rtree_node *rtree_node_insert(struct rtree_node *node, struct bounding_rectangle mbr, Pilot *pilot) {
    int best_fit, i;
    double best_fit_increase, increase;
    struct rtree_node *new_node;
