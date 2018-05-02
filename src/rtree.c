@@ -1,4 +1,4 @@
-#define NODE_LENGTH 10
+#define NODE_LENGTH 5
 
 #include <stdlib.h>
 #include <math.h>
@@ -191,13 +191,12 @@ static struct rtree_node *rtree_node_insert(struct rtree_node *node, struct boun
             node->values[node->length].mbr = new_node->mbr;
             node->values[node->length].value = new_node;
             node->length++;
-            node->mbr = mbr_add(node->mbr, mbr);
-            return NULL;
          } else {
             return rtree_node_split(node, mbr, new_node);
          }
       }
 
+      node->mbr = mbr_add(node->mbr, mbr);
       return NULL;
    }
 }
@@ -267,7 +266,7 @@ OUTER:
             } else {
                level++;
                iter->items[level].node = node->values[i].value;
-               iter->items[level].index = 0;
+               iter->items[level].index = -1;
                goto OUTER;
             }
          }
