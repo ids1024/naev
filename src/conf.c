@@ -265,6 +265,7 @@ void conf_setVideoDefaults (void)
    conf.explicit_dim = 0; /* No need for a define, this is only for first-run. */
    conf.scalefactor  = SCALE_FACTOR_DEFAULT;
    conf.minimize     = MINIMIZE_DEFAULT;
+   conf.rtree        = RTREE_DEFAULT;
 
    /* FPS. */
    conf.fps_show     = SHOW_FPS_DEFAULT;
@@ -371,6 +372,7 @@ int conf_loadConfig ( const char* file )
       conf_loadBool("fullscreen",conf.fullscreen);
       conf_loadBool("modesetting",conf.modesetting);
       conf_loadBool("minimize",conf.minimize);
+      conf_loadBool("rtree",conf.rtree);
 
       /* FPS */
       conf_loadBool("showfps",conf.fps_show);
@@ -948,6 +950,10 @@ int conf_saveConfig ( const char* file )
 
    conf_saveComment(_("Minimize on focus loss (SDL2-only)"));
    conf_saveBool("minimize",conf.minimize);
+   conf_saveEmptyLine();
+
+   conf_saveComment(_("Display rtrees (debugging)"));
+   conf_saveBool("rtree",conf.rtree);
    conf_saveEmptyLine();
 
    /* FPS */

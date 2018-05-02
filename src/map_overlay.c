@@ -18,6 +18,8 @@
 #include "space.h"
 #include "input.h"
 #include "array.h"
+#include "rtree.h"
+#include "conf.h"
 
 
 /**
@@ -50,6 +52,10 @@ static double ovr_res = 10.; /**< Resolution. */
 static void ovr_mrkRenderAll( double res );
 static void ovr_mrkCleanup(  ovr_marker_t *mrk );
 static ovr_marker_t *ovr_mrkNew (void);
+
+
+
+extern struct rtree *pilot_rtree;
 
 
 /**
@@ -258,6 +264,9 @@ void ovr_render( double dt )
 
    /* Render markers. */
    ovr_mrkRenderAll( res );
+
+   if (conf.rtree)
+      rtree_draw(pilot_rtree, res);
 }
 
 

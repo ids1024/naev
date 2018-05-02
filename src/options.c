@@ -1258,6 +1258,10 @@ static void opt_video( unsigned int wid )
          "chkMinimize", _("Minimize on focus loss"), NULL, conf.minimize );
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
+   y -= 20;
+   window_addCheckbox( wid, x, y, cw, 20,
+         "chkRtrees", _("Display rtrees (debugging)"), NULL, conf.rtree );
+
    /* Restart text. */
    window_addText( wid, 20, 10, 3*(BUTTON_WIDTH + 20),
          30, 0, "txtRestart", &gl_smallFont, &cBlack, NULL );
@@ -1500,6 +1504,8 @@ static int opt_videoSave( unsigned int wid, char *str )
             conf.minimize ? "1" : "0" );
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
    }
+   f = window_checkboxState( wid, "chkRtrees" );
+   conf.rtree = f;
 
    return 0;
 }
@@ -1529,6 +1535,7 @@ static void opt_videoDefaults( unsigned int wid, char *str )
    window_checkboxSet( wid, "chkFPS", SHOW_FPS_DEFAULT );
    window_checkboxSet( wid, "chkEngineGlow", ENGINE_GLOWS_DEFAULT );
    window_checkboxSet( wid, "chkMinimize", MINIMIZE_DEFAULT );
+   window_checkboxSet( wid, "chkRtrees", RTREE_DEFAULT );
 
    /* Faders. */
    window_faderValue(  wid, "fadScale", SCALE_FACTOR_DEFAULT );

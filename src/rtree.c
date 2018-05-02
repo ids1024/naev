@@ -5,10 +5,15 @@
 #include <assert.h>
 #include "rtree.h"
 #include "physics.h"
+#include "opengl_render.h"
 
 struct bounding_rectangle {
    double x1, x2, y1, y2;
 };
+
+const glColour cInternal = { .r=1., .g=0., .b=0., .a=.25 };
+const glColour cLeaf = { .r=0., .g=1., .b=0., .a=.25 };
+const glColour cPilot = { .r=1., .g=1., .b=1., .a=1. };
 
 struct rtree_value {
    struct bounding_rectangle mbr;
@@ -276,4 +281,33 @@ OUTER:
    }
 
    return NULL;
+}
+
+static void mbr_draw(struct bounding_rectangle mbr, double res, const glColour *c) {
+   gl_renderRectEmpty(mbr.x1 / res + SCREEN_W / 2,
+		      mbr.y1 / res + SCREEN_H / 2,
+		      (mbr.x2 - mbr.x1) / res,
+		      (mbr.y2 - mbr.y1) / res,
+		      c);
+}
+
+static void rtree_node_draw(struct rtree_node *node, double res) {
+   int i;
+
+   if (node->type == INTERNAL_NODE)
+      mbr_draw(node->mbr, res, &cInternal);
+   else
+      mbr_draw(node->mbr, res, &cLeaf);
+
+   for (i = 0; i < node->length; i++) {
+      if (node->type == INTERNAL_NODE) {
+         rtree_node_draw(node->values[i].value, res);
+      } else {
+         mbr_draw(node->values[i].mbr, res, &cPilot);
+      }
+   }
+}
+
+void rtree_draw(struct rtree *tree, double res) {
+   rtree_node_draw(tree->root, res);
 }

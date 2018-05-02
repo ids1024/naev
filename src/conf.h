@@ -39,6 +39,7 @@
 #define SHOW_PAUSE_DEFAULT                   1     /**< Whether to display pause status. */
 #define ENGINE_GLOWS_DEFAULT                 1     /**< Whether to display engine glows. */
 #define MINIMIZE_DEFAULT                     1     /**< Whether to minimize on focus loss. */
+#define RTREE_DEFAULT                        0     /**< Whether to display rtrees. */
 /* Audio options */
 #define VOICES_DEFAULT                       128   /**< Amount of voices to use. */
 #define PILOT_RELATIVE_DEFAULT               1     /**< Whether the sound is relative to the pilot (as opposed to the camera). */
@@ -89,6 +90,7 @@ typedef struct PlayerConf_s {
    int fullscreen; /**< Whether or not game is fullscreen. */
    int modesetting; /**< Whether to use modesetting for fullscreen. */
    int minimize; /**< Whether to minimize on focus loss. */
+   int rtree; /**< Whether to display rtrees */
 
    /* Sound. */
    char *sound_backend; /**< Sound backend to use. */
