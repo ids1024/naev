@@ -17,7 +17,10 @@ const glColour cPilot = { .r=1., .g=1., .b=1., .a=1. };
 
 struct rtree_entry {
    struct bounding_rectangle mbr;
-   void *value; /* Pilot if leaf, rtree_node if internal  */
+   union {
+      Pilot *pilot;
+      struct rtree_node *node;
+   } value;
 };
 
 struct rtree_node {
@@ -64,7 +67,7 @@ static void rtree_free_node(struct rtree_node *node) {
    int i;
    if (node->type == INTERNAL_NODE) {
       for (i=0; i < node->length; i++)
-         rtree_free_node(node->entries[i].value);
+         rtree_free_node(node->entries[i].value.node);
    }
 
    free(node);
@@ -98,7 +101,7 @@ static int mbr_interesect(struct bounding_rectangle mbr1, struct bounding_rectan
             mbr1.y2 < mbr2.y1 || mbr2.y2 < mbr1.y1);
 }
 
-static struct rtree_node *rtree_node_split(struct rtree_node *node, struct bounding_rectangle mbr, void *value) {
+static struct rtree_node *rtree_node_split(struct rtree_node *node, struct rtree_entry entry) {
    int i, j, distance, best_distance, best_i, best_j;
    struct rtree_node *new_node;
    struct bounding_rectangle mbr1, mbr2;
@@ -115,7 +118,7 @@ static struct rtree_node *rtree_node_split(struct rtree_node *node, struct bound
       for (j = i+1; j < NODE_LENGTH; j++) {
          /* Use -1 to represent the value being inserted */
          if (i == -1)
-            distance = mbr_distance(mbr, node->entries[j].mbr);
+            distance = mbr_distance(entry.mbr, node->entries[j].mbr);
          else
             distance = mbr_distance(node->entries[i].mbr, node->entries[j].mbr);
          if (distance > best_distance) {
@@ -127,13 +130,11 @@ static struct rtree_node *rtree_node_split(struct rtree_node *node, struct bound
    }
 
    if (best_j == -1) {
-      new_node->entries[0].mbr = mbr;
-      new_node->entries[0].value = value;
+      new_node->entries[0] = entry;
    } else {
       new_node->entries[0] = node->entries[best_j];
 
-      node->entries[best_j].mbr = mbr;
-      node->entries[best_j].value = value;
+      node->entries[best_j] = entry;
 
       if (best_i == -1)
          best_i = best_j;
@@ -169,15 +170,18 @@ static struct rtree_node *rtree_node_insert(struct rtree_node *node, struct boun
    double best_fit_increase, increase;
    struct rtree_node *new_node;
 
+   struct rtree_entry entry;
+   entry.mbr = mbr;
+   entry.value.pilot = pilot;
+
    if (node->type == LEAF_NODE) {
       if (node->length < NODE_LENGTH) {
-         node->entries[node->length].mbr = mbr;
-         node->entries[node->length].value = pilot;
+         node->entries[node->length] = entry;
          node->length++;
          node->mbr = mbr_add(node->mbr, mbr);
          return NULL;
       } else {
-         return rtree_node_split(node, mbr, pilot);
+         return rtree_node_split(node, entry);
       }
    } else {
       best_fit_increase = INFINITY;
@@ -189,16 +193,19 @@ static struct rtree_node *rtree_node_insert(struct rtree_node *node, struct boun
             best_fit = i;
          }
       }
-      new_node = rtree_node_insert(node->entries[best_fit].value, mbr, pilot);
-      node->entries[best_fit].mbr = ((struct rtree_node*)node->entries[best_fit].value)->mbr;
+      new_node = rtree_node_insert(node->entries[best_fit].value.node, mbr, pilot);
+      node->entries[best_fit].mbr = node->entries[best_fit].value.node->mbr;
 
       if (new_node != NULL) {
          if (node->length < NODE_LENGTH) {
             node->entries[node->length].mbr = new_node->mbr;
-            node->entries[node->length].value = new_node;
+            node->entries[node->length].value.node = new_node;
             node->length++;
          } else {
-            return rtree_node_split(node, mbr, new_node);
+            struct rtree_entry entry;
+            entry.mbr = mbr;
+            entry.value.node = new_node;
+            return rtree_node_split(node, entry);
          }
       }
 
@@ -224,9 +231,9 @@ void rtree_insert(struct rtree *tree, Pilot *pilot) {
       new_root->type = INTERNAL_NODE;
       new_root->length = 2;
 
-      new_root->entries[0].value = tree->root;
+      new_root->entries[0].value.node = tree->root;
       new_root->entries[0].mbr = tree->root->mbr;
-      new_root->entries[1].value = new_node;
+      new_root->entries[1].value.node = new_node;
       new_root->entries[1].mbr = new_node->mbr;
 
       tree->root = new_root;
@@ -268,10 +275,10 @@ OUTER:
          if (mbr_interesect(mbr, node->entries[i].mbr)) {
             iter->items[level].index = i;
             if (node->type == LEAF_NODE) {
-               return node->entries[i].value;
+               return node->entries[i].value.pilot;
             } else {
                level++;
-               iter->items[level].node = node->entries[i].value;
+               iter->items[level].node = node->entries[i].value.node;
                iter->items[level].index = -1;
                goto OUTER;
             }
@@ -302,7 +309,7 @@ static void rtree_node_draw(struct rtree_node *node, double res) {
 
    for (i = 0; i < node->length; i++) {
       if (node->type == INTERNAL_NODE) {
-         rtree_node_draw(node->entries[i].value, res);
+         rtree_node_draw(node->entries[i].value.node, res);
       } else {
          mbr_draw(node->entries[i].mbr, res, &cPilot);
       }
