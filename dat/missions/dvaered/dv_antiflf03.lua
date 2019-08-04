@@ -81,6 +81,7 @@ osd_desc[3] = _("Destroy the FLF base")
 osd_desc[4] = _("Return to %s in the %s system")
 
 misn_desc = _("The Dvaered are poised to launch an all-out attack on the secret FLF base. You have chosen to join this battle for wealth and glory.")
+misn_reward = _("Wealth and glory")
 
 function create()
     missys = {system.get(var.peek("flfbase_sysname"))}
@@ -113,7 +114,7 @@ function accept()
         osd_desc[4] = string.format(osd_desc[4], DVplanet, DVsys)
         misn.osdCreate(misn_title, osd_desc)
         misn.setDesc(misn_desc)
-        misn.setReward("Wealth, glory")
+        misn.setReward(misn_reward)
         misn.setTitle(misn_title)
         mission_marker = misn.markerAdd( system.get(destsysname), "high" )
         
@@ -143,6 +144,7 @@ function enter()
         DVbombers = 5 -- Amount of initial Dvaered bombers
         DVreinforcements = 20 -- Amount of reinforcement Dvaered bombers
         deathsFLF = 0
+        deathsFLFneeded = 0
         time = 0
         stage = 0
         standoff = 5000 -- The distance between the DV fleet and the base
@@ -178,7 +180,7 @@ function operationStart()
     hook.timer(13000, "spawnFLFfighters")
     hook.timer(15000, "spawnFLFbombers")
     hook.timer(17000, "spawnFLFfighters")
-    tim_sec = hook.timer(100000, "nextStage")
+    deathsFLFneeded = 11
     controller = hook.timer(1000, "control")
 end
 
@@ -188,17 +190,23 @@ function land()
         tk.msg(title[3], text[6])
         dv_modReputation( 5 )
         faction.get("Dvaered"):modPlayerSingle(10)
-        player.pay(100000) -- 100K
+        player.pay(1000000) -- 1M
         var.pop("flfbase_intro")
         var.pop("flfbase_sysname")
+        diff.apply("FLF_base")
+        diff.apply("flf_dead")
         misn.finish(true)
     end
 end
 
 -- Spawns the FLF base, ship version.
 function spawnbase()
-    base = pilot.add("FLF Base", "flf_norun", basepos)[1]
+    base = pilot.add("Sindbad", "flf_norun", basepos)[1]
     base:rmOutfit("all")
+    base:rmOutfit("cores")
+    base:addOutfit("Dummy Systems")
+    base:addOutfit("Dummy Plating")
+    base:addOutfit("Dummy Engine")
     base:addOutfit("Base Ripper MK2", 8)
     base:setHostile()
     base:setNodisable(true)
@@ -208,6 +216,11 @@ function spawnbase()
 end
 
 function deathBase()
+    player.pilot():setInvincible()
+    player.cinematics()
+    camera.set( base, true, 5000 )
+    hook.timer( 8000, "timer_plcontrol" )
+
     misn.osdActive(4)
     misn.markerMove( mission_marker, system.get(DVsys) )
 
@@ -238,12 +251,15 @@ function deathBase()
     obstinate:control()
     obstinate:hyperspace()
     obstinate:setHilight(false)
-    
-    hook.timer(12000, "zoomTo")
-    hook.timer(12000, "playerControl", false)
+    obstinate:setNoDeath()
 
     missionstarted = false
     victorious = true
+end
+
+function timer_plcontrol ()
+    camera.set( player.pilot(), true, 5000 )
+    player.cinematics( false )
 end
 
 -- Spawns the one-time-only Dvaered ships. Bombers are handled elsewhere.
@@ -257,7 +273,7 @@ function spawnDV()
     obstinate:setNodisable(true)
     obstinate:control()
     obstinate:setHilight(true)
-    obstinate:setVisible()
+    obstinate:setVisplayer()
     obstinate:rmOutfit("all")
     obstinate:addOutfit("Engine Reroute")
     obstinate:addOutfit("Small Shield Booster")
@@ -275,9 +291,8 @@ function spawnDV()
         vigilance:setDir(90)
         vigilance:setFriendly()
         vigilance:control()
-        vigilance:setVisible(true)
+        vigilance:setVisplayer(true)
         hook.pilot(vigilance, "attacked", "attacked")
-        hook.pilot(vigilance, "death", "deathDV")
         fleetDV[#fleetDV + 1] = vigilance
         i = i + 1
     end
@@ -287,33 +302,12 @@ function spawnDV()
         vendetta = pilot.add("Dvaered Vendetta", "dvaered_norun", fighterpos[i])[1]
         vendetta:setDir(90)
         vendetta:setFriendly()
-        vendetta:setVisible(true)
+        vendetta:setVisplayer(true)
         vendetta:control()
         hook.pilot(vendetta, "attacked", "attacked")
-        hook.pilot(vendetta, "death", "deathDV")
         fightersDV[#fightersDV + 1] = vendetta
         i = i + 1
     end
-end
-
--- Gets an array of possible Dvaered targets for the FLF to attack
-function possibleDVtargets()
-    targets = {}
-    -- Bias towards escorts, twice as likely as obstinate or player
-    for i, j in ipairs(fleetDV) do
-        if j:exists() then
-            targets[#targets + 1] = j
-        end
-    end
-    for i, j in ipairs(fleetDV) do
-        if j:exists() then
-            targets[#targets + 1] = j
-        end
-    end
-    -- Player and obstinate get added seperately
-    targets[#targets + 1] = player.pilot()
-    targets[#targets + 1] = obstinate
-    return targets
 end
 
 
@@ -323,7 +317,6 @@ function setFLF( j )
   j:setNodisable(true)
   j:setHostile()
   j:setVisible(true)
-  j:control()
 end
 
 
@@ -331,37 +324,29 @@ end
 function spawnFLFfighters()
     wavefirst = true
     wavestarted = true
-    local targets = possibleDVtargets()
-    local wingFLF = addShips( "FLF Vendetta", "flf_norun", base:pos(), 3 )
+    local wingFLF = addShips( "FLF Lancelot", "flf_norun", base:pos(), 3 )
     for i, j in ipairs(wingFLF) do
         fleetFLF[#fleetFLF + 1] = j
         setFLF( j )
-        j:attack(targets[rnd.rnd(#targets - 1) + 1])
     end
 end
 
 -- Spawns FLF bombers
 function spawnFLFbombers()
-    local targets = possibleDVtargets()
-    local wingFLF = addRawShips( "Ancestor", "flf_norun", base:pos(), "FLF", 3 )
+    local wingFLF = addShips( "FLF Vendetta", "flf_norun", base:pos(), 3 )
     for i, j in ipairs(wingFLF) do
         fleetFLF[#fleetFLF + 1] = j
         setFLF( j )
-        hook.pilot(j, "death", "deathFLF")
-        j:rename("FLF Ancestor")
-        j:attack(targets[rnd.rnd(#targets - 1) + 1])
     end
 end
 
 -- Spawns FLF destroyers
 function spawnFLFdestroyers()
-    local targets = possibleDVtargets()
     local wingFLF = addShips( "FLF Pacifier", "flf_norun", base:pos(), 2 )
     for i, j in ipairs(wingFLF) do
         fleetFLF[#fleetFLF + 1] = j
         hook.pilot(j, "death", "deathFLF")
         setFLF( j )
-        j:attack(targets[rnd.rnd(#targets - 1) + 1])
     end
 end
 
@@ -383,7 +368,7 @@ function deathFLF()
     pruneFLF()
 
     -- Keep track of deaths
-    if #fleetFLF <= 0 then
+    if deathsFLF >= deathsFLFneeded then
         nextStage()
     end
 end
@@ -397,62 +382,42 @@ function nextStage()
     time = 0 -- Immediately recall the Dvaered escorts
     stage = stage + 1
     deathsFLF = 0
-    hook.rm( tim_sec ) -- Stop security timer
-    if stage == 1 then
+    deathsFLFneeded = 0
+    if stage <= 1 then
         --player.msg("Starting stage 2.")
         hook.timer(1000, "spawnFLFfighters")
         hook.timer(3000, "spawnFLFbombers")
         hook.timer(5000, "spawnFLFdestroyers")
         hook.timer(7000, "spawnFLFbombers")
-        tim_sec = hook.timer(90000, "nextStage")
-    elseif stage == 2 then
+        deathsFLFneeded = 10
+    elseif stage <= 2 then
         --player.msg("Starting stage 3.")
         hook.timer(1000, "spawnFLFfighters")
         hook.timer(3000, "spawnFLFdestroyers")
         hook.timer(5000, "spawnFLFbombers")
         hook.timer(7000, "spawnFLFbombers")
         hook.timer(9000, "spawnFLFdestroyers")
-        tim_sec = hook.timer(120000, "nextStage")
-    else
+        deathsFLFneeded = 12
+    elseif stage <= 3 then
         --player.msg("Starting stage 4.")
         local delay = 0
-        hook.timer(delay, "playerControl", true)
-        hook.timer(delay, "zoomTo", obstinate)
         delay = delay + 3000
         hook.timer(delay, "broadcast", {caster = obstinate, text = phasetwo})
         hook.timer(delay, "spawnDVbomber")
-        delay = delay + 7000
-        hook.timer(delay, "zoomTo", base)
         delay = delay + 38000
         hook.timer(delay, "engageBase")
         delay = delay + 45000
         hook.timer(delay, "destroyBase")
         misn.osdActive(3)
+    else
+        print(_("WARNING: dv_antiflf03: going to next stage, but next stage doesn't exist!"))
     end
-end
-
--- Capsule function for camera.set, for timer use
-function zoomTo(target)
-    camera.set(target, true, zoomspeed)
 end
 
 -- Capsule function for pilot.broadcast, for timer use
 function broadcast(args)
     args.caster:broadcast(args.text, true)
 end
-
--- Capsule function for player.pilot():control(), for timer use
--- Also saves the player's velocity.
-function playerControl(status)
-    player.pilot():control(status)
-    player.cinematics(status)
-    if status then
-        pvel = player.pilot():vel()
-        player.pilot():setVel(vec2.new(0, 0))
-    else
-        player.pilot():setVel(pvel)
-    end
-end 
  
 -- Spawns the initial Dvaered bombers.
 function spawnDVbomber()
@@ -620,25 +585,14 @@ function attacked()
     time = 3000
     
     for i, j in ipairs(fleetDV) do
-        if j:exists() and vec2.dist(j:pos(), base:pos()) > safestandoff and vec2.dist(j:pos(), obstinate:pos()) < 1000 then
+        if j:exists() and (not base:exists() or vec2.dist(j:pos(), base:pos()) > safestandoff) and vec2.dist(j:pos(), obstinate:pos()) < 1000 then
             j:control(false)
         end
     end
     
     for i, j in ipairs(fightersDV) do
-        if j:exists() and vec2.dist(j:pos(), base:pos()) > safestandoff and vec2.dist(j:pos(), obstinate:pos()) < 1000 then
+        if j:exists() and (not base:exists() or vec2.dist(j:pos(), base:pos()) > safestandoff) and vec2.dist(j:pos(), obstinate:pos()) < 1000 then
             j:control(false)
-        end
-    end
-end
-
--- Re-target the FLF units when a Dvaered ship dies
-function deathDV()
-    local targets = possibleDVtargets()
-
-    for i, j in ipairs(fleetFLF) do
-        if j:exists() then
-            j:attack(targets[rnd.rnd(#targets - 1) + 1])
         end
     end
 end

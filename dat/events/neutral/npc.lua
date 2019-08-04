@@ -6,6 +6,12 @@
 
 include "dat/events/tutorial/tutorial-common.lua"
 
+-- Factions which will NOT get generic texts if possible.  Factions
+-- listed here not spawn generic civilian NPCs or get aftercare texts.
+-- Meant for factions which are either criminal (FLF, Pirate) or unaware
+-- of the main universe (Thurion, Proteron).
+nongeneric_factions = { "Pirate", "FLF", "Thurion", "Proteron" }
+
 -- Portraits.
 -- When adding portraits, make sure to add them to the table of the faction they belong to.
 -- Does your faction not have a table? Then just add it. The script will find and use it if it exists.
@@ -122,7 +128,28 @@ msg_lore["Za'lek"] =       {_("It's not easy, dancing to those scientists' tunes
                               _("I don't understand why we bother sending our research results to the Empire. These simpletons can't understand the simplest formulas!"),
                               }
 
-msg_lore["Proteron"] =     {_("Hello, traveler. Welcome to Proteron space. We are an evil, power hungry dystopia on a quest for dominance over the galaxy. Would you like a brochure?"),
+msg_lore["Thurion"] =      {_("Did you know that even the slightest bit of brain damage can lead to death during the upload process? That's why we're very careful to not allow our brains to be damaged, even a little."),
+                              _("My father unfortunately hit his head when he was young, so he couldn't be safely uploaded. It's okay, though; he had a long and fulfilling life, for a non-uploaded human, that is."),
+                              _("One great thing once you're uploaded is that you can choose to forget things you don't want to remember. My great-grandfather had a movie spoiled for him before he could watch it, so once he got uploaded, he deleted that memory and watched it with a fresh perspective. Cool, huh?"),
+                              _("The best part of our lives is after we're uploaded, but that doesn't mean we lead boring lives before then. We have quite easy and satisfying biological lives before uploading."),
+                              _("Being uploaded allows you to live forever, but that doesn't mean you're forced to. Any uploaded Thurion can choose to end their own life if they want, though few have chosen to do so."),
+                              _("Uploading is a choice in our society. No one is forced to do it. It's just that, well, what kind of person would turn down the chance to live a second life on the network?"),
+                              _("We were lucky to not get touched by the Incident. In fact, we kind of benefited from it. The nebula that resulted gave us a great cover and sealed off the Empire from us. It also got rid of those lunatics, the Proterons."),
+                              _("We don't desire galactic dominance. That being said, we do want to spread our way of life to the rest of the galaxy, so that everyone can experience the joy of being uploaded."),
+                              _("I think you're from the outside, aren't you? That's awesome! I've never met a foreigner before. What's it like outside the nebula?"),
+                              _("We actually make occasional trips outside of the nebula, though only rarely, and we always make sure to not get discovered by the Empire."),
+                              _("The Soromid have a rough history. Have you read up on it? First the Empire confined them to a deadly planet and doomed them to extinction. Then, when they overcame those odds, the Incident blew up their homeworld. The fact that they're still thriving now despite that is phenomenal, I must say."),
+                           }
+
+msg_lore["Proteron"] =     {_("Our system of government is clearly superior to all others. Nothing could be more obvious."),
+                              _("The Incident really set back our plan for galactic dominance, but that was only temporary."),
+                              _("We don't have time for fun and games. The whole reason we're so great is because we're more productive than any other society."),
+                              _("We are superior, so of course we deserve control over the galaxy. It's our destiny."),
+                              _("The Empire is weak, obsolete. That is why we must replace them."),
+                              _("Slaves? Of course we're not slaves. Slaves are beaten and starved. We are in top shape so we can serve our country better."),
+                              _("I can't believe the Empire continues to allow families. So primitive. Obviously, all this does is make them less productive."),
+                              _("The exact cause of the Incident is a tightly-kept secret, but the government says it was caused by the Empire's stupidity. I would expect nothing less."),
+                              _("I came across some heathen a few months back who claimed, get this, that we Proterons were the cause of the Incident! What slanderous nonsense. Being the perfect society we are, of course we would never cause such a massive catastrophe."),
                            }
 
 msg_lore["Frontier"] =     {_("We value our autonomy. We don't want to be ruled by those megalomanic Dvaered Warlords! Can't they just shoot at each other instead of threatening us? If it wasn't for the Liberation Front..."),
@@ -132,6 +159,18 @@ msg_lore["Frontier"] =     {_("We value our autonomy. We don't want to be ruled 
                               _("There are twelve true Frontier worlds, because twelve colony ships successfully completed their journey in the First Growth. But did you know that there were twenty colony ships to begin with? Eight of them never made it. Some are said to have mysteriously disappeared. I wonder what happened to them?"),
                               _("We don't have much here in the Frontier, other than our long history leading directly back to Earth. But I don't mind. I'm happy living here, and I wouldn't want to move anywhere else."),
                               _("You know the Frontier Liberation Front? They're the guerilla movement that fights for the Frontier. Not to be confused with the Liberation Front of the Frontier, the Frontier Front for Liberation, or the Liberal Frontier's Front!"),
+                           }
+
+msg_lore["FLF"] =          {_("I can't stand Dvaereds. I just want to wipe them all off the map. Don't you?"),
+                              _("One of these days, we will completely rid the Frontier of Dvaered oppressors. Mark my words!"),
+                              _("Have you ever wondered about our chances of actually winning over the Dvaereds? Sometimes I worry a little."),
+                              _("I was in charge of a bombing run last week. The mission was a success, but I lost a lot of comrades. Oh well... this is the sacrifice we must make to resist the oppressors."),
+                              _("What after we beat the Dvaereds, you say? Well, our work is never truly done until the Frontier is completely safe from oppression. Even if the Dvaered threat is ended, we'll still have those Sirius lunatics to worry about. I don't think our job will ever end in our lifetimes."),
+                              _("Yeah, it's true, lots of Frontier officials fund our operations. If they didn't, we'd have a really hard time landing on Frontier planets, what with the kinds of operations we perform against the Dvaereds."),
+                              _("Yeah, some civilians die because of our efforts, but that's just a sacrifice we have to make. It's for the greater good."),
+                              _("No, we're not terrorists. We're soldiers. True terrorists kill and destroy without purpose. Our operations do have a purpose: to drive out the Dvaered oppressors from the Frontier."),
+                              _("Riddle me this: how can we be terrorists if the Dvaereds started it by encroaching on Frontier territory? It's the stupidest thing I ever heard."),
+                              _("Well, no, the Dvaereds never actually attacked Frontier ships, but that's not the point. They have their ships in Frontier territory. What other reason could they possibly have them there for if not to oppress us?"),
                            }
 
 msg_lore["Pirate"] =       {_("Hi mate. Money or your life! Heh heh, just messing with you."),
@@ -153,7 +192,6 @@ msg_tip =                  {_("I heard you can set your weapons to only fire whe
                               _("Did you know that if a planet doesn't like you, you can often bribe the spaceport operators and land anyway? Just hail the planet with " .. tutGetKey("hail") .. ", and click the bribe button! Careful though, it doesn't always work."),
                               _("Many factions offer rehabilitation programs to criminals through the mission computer, giving them a chance to get back into their good graces. It can get really expensive for serious offenders though!"),
                               _("These new-fangled missile systems! You can't even fire them unless you get a target lock first! But the same thing goes for your opponents. You can actually make it harder for them to lock on to your ship by equipping scramblers or jammers. Scout class ships are also harder to target."),
-                              _("Your equipment travels with you from planet to planet, but your ships don't! Nobody knows why, it's just life, I guess."),
                               _("You know how you can't change your ship or your equipment on some planets? Well, it seems you need an outfitter to change equipment, and a shipyard to change ships! Bet you didn't know that."),
                               _("Are you buying missiles? You can hold down \abctrl\a0 to buy 5 of them at a time, and \abshift\a0 to buy 10. And if you press them both at once, you can buy 50 at a time! It actually works for everything, but why would you want to buy 50 laser cannons?"),
                               _("If you're on a mission you just can't beat, you can open the information panel and abort the mission. There's no penalty for doing it, so don't hesitate to try the mission again later."),
@@ -166,6 +204,8 @@ msg_tip =                  {_("I heard you can set your weapons to only fire whe
                               _("If you're having trouble with overheating weapons or outfits, you can press " .. tutGetKey("autobrake") .. " twice to put your ship into Active Cooldown. Careful though, your energy and shields won't recharge while you do it!"),
                               _("If you're having trouble shooting other ships face on, try outfitting with turrets or use an afterburner to avoid them entirely!"),
                               _("You know how time speeds up when Autonav is on, but then goes back to normal when enemies are around? Turns out you can't disable the return to normal speed entirely, but you can control what amount of danger triggers it. Really handy if you want to ignore enemies that aren't actually hitting you."),
+                              _("Flying bigger ships is awesome, but it's a bit tougher than flying smaller ships. There's so much more you have to do for the same actions, time just seems to fly by faster. I guess the upside of that is that you don't notice how slow your ship is as much."),
+                              _("I know it can be tempting to fly the big and powerful ships, but don't underestimate smaller ones! Given their simpler designs and lesser crew size, you have a lot more time to react with a smaller vessel. Some are even so simple to pilot that time seems to slow down all around you!"),
                            }
 
 -- Jump point messages.
@@ -237,10 +277,22 @@ function spawnNPC()
       factions[#factions + 1] = i
    end
 
+   local nongeneric = false
+
+   local planfaction = planet.cur():faction():name()
    local fac = "general"
    local select = rnd.rnd()
-   if select >= (0.5) and planet.cur():faction() ~= nil then
-      fac = planet.cur():faction():name()
+   if planfaction ~= nil then
+      for i, j in ipairs(nongeneric_factions) do
+         if j == planfaction then
+            nongeneric = true
+            break
+         end
+      end
+
+      if nongeneric or select >= (0.5) then
+         fac = planfaction
+      end
    end
 
    -- Append the faction to the civilian name, unless there is no faction.
@@ -262,13 +314,17 @@ function spawnNPC()
       msg = getLoreMessage(fac)
    elseif select <= 0.55 then
       -- Jump point message.
-      msg, func = getJmpMessage()
+      msg, func = getJmpMessage(fac)
    elseif select <= 0.8 then
       -- Gameplay tip message.
-      msg = getTipMessage()
+      msg = getTipMessage(fac)
    else
       -- Mission hint message.
-      msg = getMissionLikeMessage()
+      if not nongeneric then
+         msg = getMissionLikeMessage(fac)
+      else
+         msg = getLoreMessage(fac)
+      end
    end
 
    local npcdata = {name = npcname, msg = msg, func = func}
@@ -296,7 +352,7 @@ function getLoreMessage(fac)
 end
 
 -- Returns a jump point message and updates jump point known status accordingly. If all jumps are known by the player, defaults to a lore message.
-function getJmpMessage()
+function getJmpMessage(fac)
    -- Collect a table of jump points in the system the player does NOT know.
    local mytargets = {}
    seltargets = seltargets or {} -- We need to keep track of jump points NPCs will tell the player about so there are no duplicates.
@@ -305,14 +361,14 @@ function getJmpMessage()
          table.insert(mytargets, j)
       end
    end
-   
+
    if #mytargets == 0 then -- The player already knows all jumps in this system.
-      return getLoreMessage(), nil
+      return getLoreMessage(fac), nil
    end
 
    -- All jump messages are valid always.
    if #msg_jmp == 0 then
-      return getLoreMessage(), nil
+      return getLoreMessage(fac), nil
    end
    local retmsg =  msg_jmp[rnd.rnd(1, #msg_jmp)]
    local sel = rnd.rnd(1, #mytargets)
@@ -327,10 +383,10 @@ function getJmpMessage()
 end
 
 -- Returns a tip message.
-function getTipMessage()
+function getTipMessage(fac)
    -- All tip messages are valid always.
    if #msg_tip == 0 then
-      return getLoreMessage()
+      return getLoreMessage(fac)
    end
    local sel = rnd.rnd(1, #msg_tip)
    local pick = msg_tip[sel]
@@ -339,7 +395,7 @@ function getTipMessage()
 end
 
 -- Returns a mission hint message, a mission after-care message, OR a lore message if no missionlikes are left.
-function getMissionLikeMessage()
+function getMissionLikeMessage(fac)
    if not msg_combined then
       msg_combined = {}
 
@@ -355,7 +411,7 @@ function getMissionLikeMessage()
             msg_combined[#msg_combined + 1] = j[2]
          end
       end
-   
+
       -- After-care.
       -- After-care messages are only valid if the relevant mission has been completed.
       for i, j in pairs(msg_mdone) do
@@ -371,7 +427,7 @@ function getMissionLikeMessage()
    end
 
    if #msg_combined == 0 then
-      return getLoreMessage()
+      return getLoreMessage(fac)
    else
       -- Select a string, then remove it from the list of valid strings. This ensures all NPCs have something different to say.
       local sel = rnd.rnd(1, #msg_combined)

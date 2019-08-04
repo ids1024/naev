@@ -157,6 +157,8 @@
   <item>Map: Qorel Expanse</item>
   <item>Map: New Haven's hidden jump points</item>
   <item>Map: FLF Hidden Jumps</item>
+  <item>Map: FLF-Pirate Route</item>
+  <item>Map: Inner Nebula Secret Jump</item>
   <item>Ultra Map</item>
   <item>Local System Map</item>
   <item>Unicorp Scrambler</item>
@@ -164,6 +166,7 @@
   <item>Unicorp Jammer</item>
   <item>Milspec Jammer</item>
   <item>Sensor Array</item>
+  <item>GUI - Slim</item>
   <item>GUI - Brushed</item>
   <item>GUI - Legacy</item>
   <item>GUI - Slimv2</item>
@@ -467,7 +470,6 @@
   <item>Fuel Pod</item>
   <item>Star Maps</item>
   <item>Large Civilian Vessel License</item>
-  <item>GUI - Brushed</item>
   <item>Local System Map</item>
   <item>Previous Generation Small Systems</item>
   <item>Previous Generation Medium Systems</item>
@@ -512,9 +514,6 @@
   <item>Unicorp Scrambler</item>
   <item>Unicorp Jammer</item>
   <item>Large Civilian Vessel License</item>
-  <item>GUI - Brushed</item>
-  <item>GUI - Legacy</item>
-  <item>GUI - Slimv2</item>
   <item>Unicorp Medusa Launcher</item>
   <item>Jump Scanner</item>
   <item>Medusa Missile</item>
@@ -740,6 +739,7 @@
  <tech name="FLF Ships">
   <item>FLF Lancelot</item>
   <item>FLF Vendetta</item>
+  <item>FLF Pacifier</item>
  </tech>
  <tech name="Dvaered Military Ships">
   <item>Dvaered Ancestor</item>

@@ -14,7 +14,7 @@ text1 = _([[When you approach her, the officer greets you with a smile. "What a 
     
 text1r = _([["Hello again, %s," Joanne greets you. "I'm afraid I still find myself under threat from mercenary assassins. Have you reconsidered my offer? Let me tell you again what I need."]])
    
-text2 = _([["See, this is the situation," she continues. "My duties as a Sirian administration officer require me to pay visits to several military outposts throughout Sirius space. It's a long trek every time, but that just comes with the job. Now, the trouble is that Harja's assassins might have many opportunities to ambush me along the way. I've had combat training, of course, just like every other Serra soldier, but I'm afraid I have little actual fighting experience, and I'm not sure I could survive an attack unassisted. You, however, seem to have seen quite some action. If you were to escort me while I make my rounds, I would feel a lot more secure. I can reward you, of course. Let's see... Another 150,000 credits seems a fair sum. What do you think, are you willing to do it?"]])
+text2 = _([["See, this is the situation," she continues. "My duties as a Sirian administration officer require me to pay visits to several military outposts throughout Sirius space. It's a long trek every time, but that just comes with the job. Now, the trouble is that Harja's assassins might have many opportunities to ambush me along the way. I've had combat training, of course, just like every other Serra soldier, but I'm afraid I have little actual fighting experience, and I'm not sure I could survive an attack unassisted. You, however, seem to have seen quite some action. If you were to escort me while I make my rounds, I would feel a lot more secure. I can reward you, of course. Let's see... Another 750,000 credits seems a fair sum. What do you think, are you willing to do it?"]])
     
 title2 = _("Joanne's escort")
 text3 = _([["That's wonderful! Thank you so much. As I said, my job requires that I travel between Sirian military bases. You're going to need fuel to make the necessary jumps, of course. Now that you have agreed to be my personal escort I can give you clearance to dock with those bases if you don't have it already so you can automatically refuel, but either way I won't be on station long, so you won't have time to disembark and do other things while you're there.
@@ -33,7 +33,7 @@ text5 = _([[After you both land your ships, you meet Joanne in the spaceport bar
     "Thank you, %s," Joanne says, "I appreciate it. Well, I guess I should start at the beginning."]])
     
 title5 = _("Joanne and Harja")
-text6 = _([["Several SCU ago, me and Harja were both students at the High Academy on Sinass. It's a very prestigious place among us Sirii, as you may or may not know. It's only one jump away from Mutris itself and... Well, anyway, it's one of the best academies in all of Sirius space, and only the most capable students are even allowed to attend. Now, I don't mean to brag, you understand, but even in that environment I was among the top rated students. And, believe it or not, so was Harja. We were in the same study unit, actually.
+text6 = _([["Several cycles ago, I and Harja were both students at the High Academy on Sinass. It's a very prestigious place among us Sirii, as you may or may not know. It's only one jump away from Mutris itself and... Well, anyway, it's one of the best academies in all of Sirius space, and only the most capable students are even allowed to attend. Now, I don't mean to brag, you understand, but even in that environment I was among the top rated students. And, believe it or not, so was Harja. We were in the same study unit, actually.
     "Another thing you should know is that the High Academy offers the very best among its students the chance to advance to the Serra echelon. You're not Sirian so you might not understand, but it's an exceptional honor for those born into the Shaira or Fyrra echelons to rise to a higher echelon. It's extremely valuable to us. So you see, the prospect of being rewarded like that is a very strong motivation for most of the students. It was no different for Harja and myself, since we were both Fyrra echelon. With our abilities, each of us had a good chance of earning the promotion. However, since we were in the same study unit, only one of us could be promoted, since only one promotion is awarded per study unit each curriculum. That meant that Harja and I were rivals, but we were rivals in good sport. We each had every intention of winning the promotion through fair competition... Or so I thought."]])
     
 text7 = _([["After the final exams had been taken and we were only days away from receiving the results, there was an incident. There had been a security breach in the academy's main computer. Someone had hacked the system and altered the data for the final exams, mine to be exact. My grades had been altered to be straight one hundred per cents, in every subject. Can you believe that? Someone had actually tried to make it look like I was cheating. What were they thinking? The academy staff wasn't fooled for even a moment. Nobody would be stupid enough to alter their own scores that way, so the only reason my scores would have been altered is if someone else did it, no doubt in order to discredit me. And you guessed it, the prime suspect was Harja. After all, if I was disqualified, he would certainly have gotten the promotion. Instead, he got what he deserved, and was expelled for his low attempt to secure his own success."
@@ -74,7 +74,7 @@ osd_final = {_("Land on Sroolu to get your reward")}
 osd_final["__save"] = true
 
 misn_desc = _("Joanne needs you to escort her ship and fight off mercenaries sent to kill her.")
-misn_reward = _("Joanne will pay you another 150,000 credits.")
+misn_reward = _("Joanne will pay you another 750,000 credits.")
 
 function create()
    if not misn.claim ( {system.get("Humdrum"), system.get("Lapis")} ) then
@@ -158,7 +158,7 @@ function land()
       tk.msg(title4, text5:format(player.name(), player.name()))
       tk.msg(title5, text6)
       tk.msg(title5, text7:format(player.name()))
-      player.pay(150000) -- 150K
+      player.pay(750000) -- 750K
       var.pop("achack02repeat")
       misn.finish(true)
    end

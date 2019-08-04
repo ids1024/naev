@@ -17,7 +17,7 @@ choice[3] = _("I'm in. Where do I sign up?")
 choice[4] = _("Sounds risky. Give me some time.")
 chooser = {}
 chooser[1] = _([[He looks at you, betraying a little emotion. "The Nasin are a pure piece of glass. When light shines through glass, the light is only as pure as the glass itself. If the glass is dirty, then the light is distorted, and doesn't come through correctly. If the glass is mishappen or broken, the light may not filter through at all. We, the Nasin, are the purest glass there is, and House Sirius has become corrupt. We exist to see its downfall."]])
-chooser[2] = _([[Draga motions you in closer. "We have reason to believe that %s is about to be attacked. We are expecting Sirius to send in recon elements any STU now. We want you to handle that, as you see fit. Keep them away from the station. Better yet, kill them. We can pay you %s. We do ask that you stay in-system and off-planet until the mission is complete, otherwise you'll be considered AWOL, which means you're fired."]])
+chooser[2] = _([[Draga motions you in closer. "We have reason to believe that %s is about to be attacked. We are expecting Sirius to send in recon elements any hectosecond now. We want you to handle that, as you see fit. Keep them away from the station. Better yet, kill them. We can pay you %s. We do ask that you stay in-system and off-planet until the mission is complete, otherwise you'll be considered AWOL, which means you're fired."]])
 chooser[3] = _([[Draga looks triumphant, but only for an instant. "Great. You should get going, we are expecting them at any second. Good luck, and godspeed."]])
 chooser[4] = _([[You brace yourself, as Draga appears ready to attack. He waves his arms about in obvious anger. "Great! I knew you were a waste of time. Well, if you decide to outgrow your diapers, I'll be right here waiting for you."
    You walk away insulted, but strangely curious.]])
@@ -42,6 +42,7 @@ doom_clock_msg = _([[A scratchy voice jumps in on your comms priority channel.
 out_sys_failure_msg = _([[Your comm station flares up with a scratchy, obviously-from-far-away noise. A voice is heard through it.
    "%s! We told you we needed you to stay in system! Apparently you have more important things to do. So get lost, kid! We'll take care of ourselves." The static cuts out, and you consider yourself fired.]])
 misn_desc = _("Destroy the Sirius recon element that flew into %s. WARNING: DO NOT JUMP OUT-SYSTEM OR LAND ON THE PLANET PREMATURELY.")
+misn_reward = _("%s credits")
 
 function create()
    --this mission does make one system claim, in suna.
@@ -53,7 +54,7 @@ function create()
    nasin_rep = faction.playerStanding("Nasin")
    misn_tracker = var.peek("heretic_misn_tracker")
    playername = player.name()
-   reward = math.floor((10000+(math.random(5,8)*200)*(nasin_rep^1.315))*.01+.5)/.01
+   reward = math.floor((100000+(math.random(5,8)*2000)*(nasin_rep^1.315))*.01+.5)/.01
    chronic = 0
    finished = 0
    takeoff_counter = 0
@@ -61,7 +62,7 @@ function create()
    deathcount = 0
    --set the mission stuff
    misn.setTitle(misn_title)
-   misn.setReward(numstring(reward) .. "credits")
+   misn.setReward(misn_reward:format(numstring(reward)))
    misn.setNPC(npc_name,"neutral/thief2")
    misn.setDesc(bar_desc)
 

@@ -812,6 +812,24 @@ int system_index( StarSystem *sys )
 
 
 /**
+ * @brief Get whether or not a planet has a system (i.e. is on the map).
+ *
+ *    @param planetname Planet name to match.
+ *    @return 1 if the planet has a system, 0 otherwise.
+ */
+int planet_hasSystem( const char* planetname )
+{
+   int i;
+
+   for (i=0; i<spacename_nstack; i++)
+      if (strcmp(planetname_stack[i],planetname)==0)
+         return 1;
+
+   return 0;
+}
+
+
+/**
  * @brief Get the name of a system from a planetname.
  *
  *    @param planetname Planet name to match.
@@ -1365,7 +1383,7 @@ void space_init( const char* sysname )
    /* cleanup some stuff */
    player_clear(); /* clears targets */
    ovr_mrkClear(); /* Clear markers when jumping. */
-   pilots_clean(); /* destroy all the current pilots, except player */
+   pilots_clean(1); /* destroy non-persistant pilots */
    weapon_clear(); /* get rid of all the weapons */
    spfx_clear(); /* get rid of the explosions */
    gatherable_free(); /* get rid of gatherable stuff. */
@@ -2973,7 +2991,11 @@ static int system_parseAsteroidField( const xmlNodePtr node, StarSystem *sys )
    /* Initialize the convex subsets. */
    a->subsets = malloc( sizeof(AsteroidSubset) );
    a->subsets[0].ncorners = a->ncorners;
-   a->subsets[0].corners = a->corners;
+   a->subsets[0].corners = malloc( sizeof(Vector2d)*a->ncorners );
+   for (j=0; j<a->ncorners; j++) {
+      a->subsets[0].corners[j].x = a->corners[j].x;
+      a->subsets[0].corners[j].y = a->corners[j].y;
+   }
    a->nsubsets = 1;
 
    /* Cut the subsets until they are all convex. */
@@ -3084,6 +3106,7 @@ static int system_parseAsteroidField( const xmlNodePtr node, StarSystem *sys )
       }
       sub->aera /= 2;
    }
+
    return 0;
 }
 

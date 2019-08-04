@@ -14,7 +14,7 @@ bar_desc = _("You see a bunch of guys and gals, excitedly whispering over some p
 
 -- Mission details.
 misn_title = _("DIY Nerds") 
-misn_reward = _("20000 credits")
+misn_reward = _("20,000 credits")
 misn_desc = _("Cart some nerds to their contest, and back.")
 
 title = {}
@@ -25,7 +25,7 @@ title[1] = _("A group of excited nerds")
 text[1] = [[As you approach the group, the babbling ceases and the papers are quickly and jealously stashed away. One of the girls comes forward and introduces herself.
     "Hi, I'm Mia. We need transportation, and you look as if you could need some dough. Interested?"
     You reply that for a deal to be worked out, they better provide some detail.
-    "Listen," she says, "there's this Homebrew Processing Box Masters on %s. Right over there, this system. I'm sure our box will get us the first prize. You take us there, you take us back, you get 20000."
+    "Listen," she says, "there's this Homebrew Processing Box Masters on %s. Right over there, this system. I'm sure our box will get us the first prize. You take us there, you take us back, you get 20,000."
     You just start wondering at the boldness of so young a lady as she already signals her impatience. "What now, you do it?"]]
 
 -- you accept
@@ -36,7 +36,7 @@ text[2] = [[Upon accepting the task, you see the entire group relax visibly, and
   
 -- right planet, in time
 title[3] = _("Happy nerds")
-text[3] = [["Good job, %s," Mia compliments you upon arrival. "We'll now go win the competition and celebrate a bit. You better stay in the system. We will hail you in about 4 or 5 STP, so you can pick us up an' bring us back to %s."
+text[3] = [["Good job, %s," Mia compliments you upon arrival. "We'll now go win the competition and celebrate a bit. You better stay in the system. We will hail you in about 4 or 5 periods, so you can pick us up an' bring us back to %s."
     That said, the nerds shoulder the box and rushes towards a banner which reads "Admissions".]]
 
 -- right planet, late
@@ -54,7 +54,7 @@ title[6] = _("In-system communication")
 text[6] = [[A beep from your communications equipment tells you that someone wants to talk to you. You realize it is the nerds, and return the hail. "Yo! This is Mia," comes a familiar voice from the speaker. "We're done here. Time to come back and pick us up, we have things to do on %s."]]
 
 title[7] = _("In-system communication")
-text[7] = [[Your comm link comes up again. It is the nerds, whom you'd almost forgotten. You hear Mia's voice: "Hey, what are you waiting for? Better be here within one STP, or we'll get another pilot and pay them, not you!"]]
+text[7] = [[Your comm link comes up again. It is the nerds, whom you'd almost forgotten. You hear Mia's voice: "Hey, what are you waiting for? You'd better be here within one period, or we'll get another pilot and pay them, not you!"]]
 
 -- you pick up the nerds in time, they won
 title[8] = _("Happy nerds")
@@ -77,21 +77,21 @@ text[11] = [[Seeing that it is already too late to pick up the nerds, and that y
 
 -- you return the nerds, who have won the contest
 title[12] = _("The End")
-text[12] = [[The nerds, finally exhausted from all the partying, still smile as they pack up their prize-winning box and leave your ship. Mia beams as she turns to you. "Well done, %s. You see, since we got loads of prize money, we decided to give you a bonus. After all, we wouldn't have gotten there without your service. Here, you have 30000. Good day to you."]]
+text[12] = [[The nerds, finally exhausted from all the partying, still smile as they pack up their prize-winning box and leave your ship. Mia beams as she turns to you. "Well done, %s. You see, since we got loads of prize money, we decided to give you a bonus. After all, we wouldn't have gotten there without your service. Here, have 30,000. Good day to you."]]
 
 -- you return the nerds, who did not win the contest
 title[13] = _("Minor Complications")
 text[13] = [[With sagging shoulders, the nerds unload their box. Mia turns to address you, not bold at all this time. "Um, we got a bit of a problem here. You know, we intended to pay the trip from our prize money. Now we don't have no prize money."
     As you're trying to decide what to make of the situation, one of the other nerds creeps up behind Mia and cautiously gestures for her to join the group a few yards away, all the time avoiding your eyes. Strange guy, you think, as if he was not accustomed to be socializing with strangers. Mia joins the group, and some whispering ensues. Mia returns to you after a few minutes.
-    "Ok, we have just solved our problem. See, that ass of a champion won the contest with a ship's processing unit. We can do it the other way round. We'll modify our box so that it can be used as a ship's coprocessor, and you can have it as a compensation for your troubles. Interested?"]]
+    "Ok, we have just solved our problem. See, that ass of a champion won the contest with a ship's processing unit. We can do it the other way round. We'll modify our box so that it can be used as a ship's core system, and you can have it as a compensation for your troubles. Interested?"]]
 
 title[14] = _("So what?")
 text[14] = [["Honestly, there is nothing you can do about it," Mia says impatiently, as if you were a small child complaining about the finiteness of an ice cream cone. "Just stand by while we rig the thing up."]]
 
 title[15] = _("The End")
-text[15] = [["You can wait for it, won't take longer than half a STP," Mia informs you. You stand by as the nerds start to mod their box. As they are going for it, you wonder if they're actually wrecking it and you'll maybe be left with a piece of worthless junk.
-    Finally, the modified box is set before you. "Here you are. Now you're the proud owner of the system's only home-made coprocessing unit. It's gotten a bit bulkier than we thought, with all this rigging for energy and coolant supply, but it should work just fine. We must go now and think about something more advanced for the next competition. Have a nice day."
-    With that, the nerds leave. Having gotten nothing else out of this, you think you should visit an outfitter to see if the box may actually be of any use.]]
+text[15] = [["You can wait for it, won't take longer than half a period," Mia informs you. You stand by as the nerds start to mod their box. As they are going for it, you wonder if they're actually wrecking it and you'll maybe be left with a piece of worthless junk.
+    Finally, the modified box is set before you. "Here you are. Now you're the proud owner of the system's only home-made core system. It's gotten a bit bulkier than we thought, with all this rigging for energy and coolant supply, but it should work just fine, about equivalent to the %s. We need to go now and think about something more advanced for the next competition. Have a nice day."
+    With that, the nerds leave. Having gotten nothing else out of this, you think you should visit an outfitter to see if the homemade core system may actually be of any use, or if you can at least sell it.]]
 
 -- for use in accept(), if any of the mission's preconditions are not met
 title[16] = _("Not enough cargo space")
@@ -116,7 +116,7 @@ textosd[1] = _("Bring the nerds and their box to %s before %s")
 textosd[2] = _("You have %s remaining.")
 textosd[3] = _("You're late. Mia has started verbally abusing you and your ship. Better land to get rid of the nerds and their box.")
 -- stage 2
-textosd[4] = _("You are to wait several STP until hailed by the nerds for their return trip.")
+textosd[4] = _("You are to wait several periods until hailed by the nerds for their return trip.")
 textosd[5] = _("Pick up the nerds on %s for their return trip to %s.")
 textosd[6] = _("The nerds are getting impatient.")
 textosd[7] = _("You didn't pick up the nerds in time.")
@@ -354,7 +354,7 @@ function nerds_land3()
          if not tk.yesno(title[13], text[13]) then
             tk.msg(title[14], text[14])
          end
-         tk.msg(title[15], text[15])
+         tk.msg(title[15], text[15]:format( outfit ))
          time.inc(time.create(0,0,5000))
          player.addOutfit(outfit)
          if planet.services(cp)["outfits"] then

@@ -29,7 +29,7 @@ emsg[2] = _([[You approach the man who appears to be the leader of the group. "O
 osd = {}
 osd[1] = _("Deliver the shipment to %s in the %s system.")
 --random odds and ends
-notenoughcargo = _([["You say you want this job, but you don't have enough cargo room for this assignment, little man!" Ragnarok turns away, displeased at wasting a whole 5 STU on you.]])
+notenoughcargo = _([["You say you want this job, but you don't have enough cargo room for this assignment, little man!" Ragnarok turns away, displeased at wasting a whole 5 seconds on you.]])
 rejected = _([[He looks at you, almost appearing confused.
     "Well, thats your choice boy. Be on your way now. I'm busy."
     You walk away, wondering if you really missed out on an oppourtunity.]])
@@ -37,11 +37,12 @@ npc_name = _("Ragnarok")
 bar_desc = _("You see a rougher looking gent sitting at the bar, guzzling a brownish ale.")
 misn_desc = _("Deliver the shipment to %s in %s for the Nasin.")
 misn_title = _("The Gauntlet")
+misn_reward = _("%s credits")
 
 function create()
    --this mission makes no mission claims
    --set the variables
-   reward = 20000 --reward algorithm after this mission = 10000 + (rnd.rnd(5,8)*200 * (nasin_rep^1.51). flat rate for first mission.
+   reward = 200000 --reward algorithm after this mission = 100000 + (rnd.rnd(5,8)*2000 * (nasin_rep^1.51). flat rate for first mission.
    startworld = planet.cur()
    targetasset = planet.get("Margot")
    targetsystem = system.get("Brendon")
@@ -49,7 +50,7 @@ function create()
       misn.finish(false)
    end
    --set the mission stuff
-   misn.setReward(reward)
+   misn.setReward(misn_reward:format(numstring(reward)))
    misn.setTitle(misn_title)
    misn.setNPC(npc_name,"neutral/thief1") --using a generic picture for now.
    misn.setDesc(bar_desc)
@@ -74,7 +75,7 @@ function accept()
    misn.osdActive(1)
    freecargo = player.pilot():cargoFree() --checks to make sure the player has 5 tons available
    if freecargo < 5 then
-      tk.msg(misn_title,notenoughcargo) --and if he doesnt, the mission finishes.
+      tk.msg(misn_title,notenoughcargo) --and if they don't, the mission finishes.
       misn.finish(false)
    end
    small_arms = misn.cargoAdd("Small Arms",5) --i'd like this to be contraband when this actually gets implemented in-game.

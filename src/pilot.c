@@ -31,6 +31,7 @@
 #include "escort.h"
 #include "music.h"
 #include "player.h"
+#include "player_autonav.h"
 #include "gui.h"
 #include "board.h"
 #include "debris.h"
@@ -1185,7 +1186,7 @@ void pilot_rmFriendly( Pilot* p )
  */
 int pilot_getJumps( const Pilot* p )
 {
-   return (int)floor(p->fuel / p->fuel_consumption);
+   return p->fuel / p->fuel_consumption;
 }
 
 
@@ -1481,7 +1482,7 @@ void pilot_updateDisable( Pilot* p, const unsigned int shooter )
 
       /* This is sort of a hack to make sure it gets reset... */
       if (p->id==PLAYER_ID)
-         pause_setSpeed( player_isFlag(PLAYER_DOUBLESPEED) ? 2. : 1. );
+         player_autonavResetSpeed();
    }
 }
 
@@ -2253,7 +2254,6 @@ int pilot_refuelStart( Pilot *p )
    /* Now start the boarding to refuel. */
    pilot_setFlag(p, PILOT_REFUELBOARDING);
    p->ptimer  = PILOT_REFUEL_TIME; /* Use timer to handle refueling. */
-   p->pdata   = PILOT_REFUEL_QUANTITY;
    return 1;
 }
 
@@ -2267,8 +2267,6 @@ int pilot_refuelStart( Pilot *p )
 static void pilot_refuel( Pilot *p, double dt )
 {
    Pilot *target;
-   double amount;
-   int jumps;
 
    /* Check to see if target exists, remove flag if not. */
    target = pilot_get(p->target);
@@ -2281,31 +2279,15 @@ static void pilot_refuel( Pilot *p, double dt )
    /* Match speeds. */
    p->solid->vel = target->solid->vel;
 
-   amount = CLAMP( 0., p->pdata, PILOT_REFUEL_RATE * dt);
-   p->pdata -= amount;
-
-   /* Move fuel. */
-   p->fuel        -= amount;
-   target->fuel   += amount;
-   /* Stop refueling at max. */
-   if (target->fuel > target->fuel_max) {
-      p->ptimer      = -1.;
-      target->fuel   = target->fuel_max;
-   }
-
    /* Check to see if done. */
    if (p->ptimer < 0.) {
-      /* Counteract accumulated floating point error by rounding up
-       * if pilots have > 99.99% of a jump worth of fuel.
-       */
+      /* Move fuel. */
+      p->fuel       -= PILOT_REFUEL_QUANTITY;
+      target-> fuel += PILOT_REFUEL_QUANTITY;
 
-      jumps = pilot_getJumps(p);
-      if ((p->fuel / p->fuel_consumption - jumps) > 0.9999)
-         p->fuel = p->fuel_consumption * (jumps + 1);
-
-      jumps = pilot_getJumps(target);
-      if ((target->fuel / target->fuel_consumption - jumps) > 0.9999)
-         target->fuel = target->fuel_consumption * (jumps + 1);
+	  if (target->fuel > target->fuel_max) {
+	     target->fuel   = target->fuel_max;
+	  }
 
       pilot_rmFlag(p, PILOT_REFUELBOARDING);
       pilot_rmFlag(p, PILOT_REFUELING);
@@ -2433,7 +2415,7 @@ void pilot_init( Pilot* pilot, Ship* ship, const char* name, int faction, const 
    pilot->armour = pilot->armour_max = 1.; /* hack to have full armour */
    pilot->shield = pilot->shield_max = 1.; /* ditto shield */
    pilot->energy = pilot->energy_max = 1.; /* ditto energy */
-   pilot->fuel   = pilot->fuel_max   = 1.; /* ditto fuel */
+   pilot->fuel   = pilot->fuel_max   = 1; /* ditto fuel */
    pilot_calcStats(pilot);
    pilot->stress = 0.; /* No stress. */
 
@@ -2891,14 +2873,17 @@ void pilots_free (void)
 
 
 /**
- * @brief Cleans up the pilot stack - leaves the player, and persisted pilots.
+ * @brief Cleans up the pilot stack - leaves the player
+ *
+ *    @param persist Do not remove persistant pilots.
  */
-void pilots_clean (void)
+void pilots_clean (int persist)
 {
    int i, persist_count=0;
    for (i=0; i < pilot_nstack; i++) {
       /* move player and persisted pilots to start */
-      if (pilot_stack[i] == player.p || pilot_isFlag(pilot_stack[i], PILOT_PERSIST)) {
+      if (pilot_stack[i] == player.p ||
+          (persist && pilot_isFlag(pilot_stack[i], PILOT_PERSIST))) {
          pilot_stack[persist_count] = pilot_stack[i];
          pilot_stack[persist_count]->lockons = 0; /* Clear lockons. */
          pilot_clearTimers( player.p ); /* Reset timers. */
@@ -2932,7 +2917,7 @@ void pilots_clear (void)
  */
 void pilots_cleanAll (void)
 {
-   pilots_clean();
+   pilots_clean(0);
    if (player.p != NULL) {
       pilot_free(player.p);
       player.p = NULL;

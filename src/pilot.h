@@ -36,8 +36,7 @@
 #define PILOT_TAKEOFF_DELAY      2. /**< Delay for takeoff animation. */
 /* Refueling. */
 #define PILOT_REFUEL_TIME        3. /**< Time to complete refueling. */
-#define PILOT_REFUEL_QUANTITY    101. /**< Amount transferred per refuel. */
-#define PILOT_REFUEL_RATE        PILOT_REFUEL_QUANTITY/PILOT_REFUEL_TIME /**< Fuel per second. */
+#define PILOT_REFUEL_QUANTITY    100 /**< Amount transferred per refuel. */
 /* Misc. */
 #define PILOT_SIZE_APROX         0.8   /**< approximation for pilot size */
 #define PILOT_WEAPON_SETS        10    /**< Number of weapon sets the pilot has. */
@@ -303,11 +302,11 @@ typedef struct Pilot_ {
    double armour;    /**< Current armour. */
    double stress;    /**< Current disable damage level. */
    double shield;    /**< Current shield. */
-   double fuel;      /**< Current fuel. */
-   double fuel_consumption; /**< Fuel consumed per jump. */
+   int fuel;      /**< Current fuel. */
+   int fuel_consumption; /**< Fuel consumed per jump. */
    double armour_max; /**< Maximum armour. */
    double shield_max; /**< Maximum shield. */
-   double fuel_max;  /**< Maximum fuel. */
+   int fuel_max;  /**< Maximum fuel. */
    double armour_regen; /**< Armour regeneration rate (per second). */
    double shield_regen; /**< Shield regeneration rate (per second). */
    double dmg_absorb; /**< Ship damage absorption [0:1] with 1 being 100%. */
@@ -511,7 +510,7 @@ void pilot_delete( Pilot *p );
  */
 void pilot_destroy(Pilot* p);
 void pilots_free (void);
-void pilots_clean (void);
+void pilots_clean (int persist);
 void pilots_clear (void);
 void pilots_cleanAll (void);
 void pilot_free( Pilot* p );

@@ -200,7 +200,7 @@ static void info_openMain( unsigned int wid )
          "\n"
          "%s Credits\n"
          "%s\n"
-         "%.0f (%d Jumps)"),
+         "%d (%d Jumps)"),
          player.name,
          nt,
          player_rating(),
@@ -388,6 +388,7 @@ static void info_openShip( unsigned int wid )
          "Thrust:\n"
          "Speed:\n"
          "Turn:\n"
+         "Time Dilation:\n"
          "\n"
          "Absorption:\n"
          "Shield:\n"
@@ -433,13 +434,14 @@ static void ship_update( unsigned int wid )
          "%.0f kN/tonne\n"
          "%.0f m/s (max %.0f m/s)\n"
          "%.0f deg/s\n"
+         "%.0f%%\n" /* Time Dilation (dt_default) */
          "\n"
          "%.0f%%\n" /* Absorbption */
          "%.0f / %.0f MJ (%.1f MW)\n" /* Shield */
          "%.0f / %.0f MJ (%.1f MW)\n" /* Armour */
          "%.0f / %.0f MJ (%.1f MW)\n" /* Energy */
          "%d / %d tonnes\n"
-         "%.0f / %.0f units (%d jumps)\n"
+         "%d / %d units (%d jumps)\n"
          "\n"),
          /* Generic */
          player.p->name,
@@ -453,6 +455,7 @@ static void ship_update( unsigned int wid )
          player.p->thrust / player.p->solid->mass,
          player.p->speed, solid_maxspeed( player.p->solid, player.p->speed, player.p->thrust ),
          player.p->turn*180./M_PI,
+         player.p->ship->dt_default * 100.,
          /* Health. */
          player.p->dmg_absorb * 100.,
          player.p->shield, player.p->shield_max, player.p->shield_regen,

@@ -27,9 +27,11 @@
 
 ]]--
 
+include "numstring.lua"
+
 bar_desc = _("Dimitri should be around here, but you can't see him. You should probably look for him.")
 misn_title = _("Operation Black Trinity")
-misn_reward = _("None")
+misn_reward = _("%s credits")
 misn_desc = {}
 misn_desc[1] = _("Arrest the ESS Trinity in %s.")
 misn_desc[2] = _("Return to base at %s in %s.")
@@ -43,7 +45,7 @@ text = {}
 text[1] = _([[You enter the bar, but you can't seem to find Lt. Commander Dimitri. As you look around for him, you feel a heavy hand fall on your shoulder. It seems like two armed soldiers are here to escort you somewhere, and from the looks of their weapons, they mean business. You have no choice other then to comply.
     They start leading you away from the bar through some hallways you've never been through before. Must be all those 'Authorised Personnel Only' signs and the armed guards that didn't make them too appealing.
     Finally they toss you into what seems to be an interrogation room, simply telling you to wait.]])
-text[2] = _([[After what seems to be an STP, you hear the door open. You see a highly decorated woman walk in, with two soldiers standing guard at the door. She seems to be a Commodore, from the insignia on her uniform.
+text[2] = _([[After what seems to be the whole period, you hear the door open. You see a highly decorated woman walk in, with two soldiers standing guard at the door. She seems to be a Commodore, from the insignia on her uniform.
     "Hello, I'm Commodore Keer, I've taken over the Collective issue. I have heard about your success in the previous missions and would like to offer you more work. However, further proceedings must be kept in strict confidentiality for the interest of the Empire. You willing to go all the way with this?"]])
 text[3] = _([[You accept and she dismisses both of the soldiers, who proceed to wait outside.
     "We've been following Lt. Commander Dimitri's progress since he started at %s. The datapad you brought back has confirmed what we have suspected. We have a undercover Collective agent somewhere in the military who's been feeding ex-Commodore Welsh data. You don't understand, right? Let me explain."]])
@@ -81,11 +83,12 @@ taunts[3] = _("My drones will make mincemeat of you!")
 function create ()
    missys = {system.get("Rockbed")}
    if not misn.claim(missys) then
-      abort()
+      misn.finish(false)
    end
  
    misn.setNPC( _("Dimitri?"), "unknown" )
    misn.setDesc( bar_desc )
+   credits = 2000000
 end
 
 
@@ -111,7 +114,7 @@ function accept ()
 
    -- Mission details
    misn.setTitle(misn_title)
-   misn.setReward( misn_reward )
+   misn.setReward( misn_reward:format( numstring( credits ) ) )
    misn.setDesc( string.format(misn_desc[1], misn_target_sys:name() ))
    osd_msg[1] = osd_msg[1]:format(misn_target_sys:name())
    osd_msg[3] = osd_msg[3]:format(misn_base:name())
@@ -122,9 +125,7 @@ function accept ()
    tk.msg( title[4], string.format(text[5], misn_target_sys:name(), misn_target_sys:name() ) )
 
    -- Escorts
-   esc_pacifier  = true
-   esc_lancelot1 = true
-   esc_lancelot2 = true
+   escorts = {}
 
    hook.jumpout("jumpout")
    hook.jumpin("jumpin")
@@ -153,16 +154,16 @@ function enter ( from_sys )
    if misn_stage == 0 then
       local sys = system.cur()
 
-      -- Escorts enter a while back
-      enter_vect = player.pos()
-      if from_sys == nil then
-         add_escorts( true )
-      else -- Just jumped
-         hook.timer( rnd.int(2000, 5000), "add_escorts" )
-      end
-
       -- Create some havoc
       if sys == misn_target_sys then
+         -- Escorts enter a while back
+         enter_vect = player.pos()
+         if from_sys == nil then
+            add_escorts( true )
+         else -- Just jumped
+            hook.timer( rnd.int(2000, 5000), "add_escorts" )
+         end
+
          -- Disable spawning and clear pilots -> makes it more epic
          pilot.clear()
          pilot.toggleSpawn(false)
@@ -195,28 +196,11 @@ function enter ( from_sys )
 end
 
 
--- Gets the empire talker
-function emp_talker ()
-   if esc_pacifier then
-      talker = paci
-   elseif esc_lancelot1 then
-      talker = lance1
-   elseif esc_lancelot2 then
-      talker = lance2
-   else
-      -- I don't like the idea of player talking, but we need the conversation
-      talker = player.pilot()
-   end
-
-   return talker
-end
-
-
 -- Little talk when ESS Trinity is encountered.
 function final_talk ()
    -- Empire talks about arresting
    if final_fight == 0 then
-      talker = emp_talker()
+      talker = paci
       talker:broadcast( talk[1] )
 
       final_fight = 1
@@ -229,7 +213,7 @@ function final_talk ()
       hook.timer(rnd.int( 3000, 4000 ), "final_talk")
    elseif final_fight == 2 then
       -- Talk
-      talker = emp_talker()
+      talker = paci
       talker:broadcast( talk[3] )
 
       -- ESS Trinity becomes collective now.
@@ -244,14 +228,10 @@ function final_talk ()
       hook.timer(rnd.int( 3000, 5000 ) , "call_drones")
       hook.timer( 3000, "trinity_check" )
       tri_checked = 0
-      if esc_pacifier then
-         paci:control(false)
-      end
-      if esc_lancelot1 then
-         lance1:control(false)
-      end
-      if esc_lancelot2 then
-         lance2:control(false)
+      for i, j in ipairs( escorts ) do
+         if j:exists() then
+            j:control(false)
+         end
       end
    end
 end
@@ -334,7 +314,7 @@ function drone_dead ()
 end
 
 
--- Adds escorts that weren't killed sometime.
+-- Adds escorts
 function add_escorts( landed )
    local param
    if landed then
@@ -342,46 +322,25 @@ function add_escorts( landed )
    else
       param = last_sys
    end
-   if esc_pacifier then
-      enter_vect:add( rnd.int(-50,50), rnd.int(-50,50) )
-      paci = pilot.add("Empire Pacifier", "escort_player", param)
-      paci = paci[1]
-      paci:setFriendly()
-      hook.pilot(paci, "death", "paci_dead")
-      if trinity ~= nil then
-         paci:control()
-         paci:goto( trinity:pos():add( 100, 0 ) )
-      end
+   
+   if escorts == nil then escorts = {} end
+   paci = pilot.add("Empire Pacifier", "escort_player", param)[1]
+   escorts[#escorts + 1] = paci
+   paci:setFriendly()
+   if trinity ~= nil then
+      paci:control()
+      paci:goto( trinity:pos() )
    end
-   if esc_lancelot1 then
-      enter_vect:add( rnd.int(-50,50), rnd.int(-50,50) )
-      lance1 = pilot.add("Empire Lancelot", "escort_player", param)
-      lance1 = lance1[1]
-      lance1:setFriendly()
-      hook.pilot(lance1, "death", "lance1_dead")
+   for i=1, 6 do
+      local lance = pilot.add("Empire Lancelot", "escort_player", param)[1]
+      escorts[#escorts + 1] = lance
+      lance:setFriendly()
       if trinity ~= nil then
-         lance1:control()
-         lance1:goto( trinity:pos():add( -100, -100 ) )
-      end
-   end
-   if esc_lancelot2 then
-      enter_vect:add( rnd.int(-50,50), rnd.int(-50,50) )
-      lance2 = pilot.add("Empire Lancelot", "escort_player", param)
-      lance2 = lance2[1]
-      lance2:setFriendly()
-      hook.pilot(lance2, "death", "lance2_dead")
-      if trinity ~= nil then
-         lance2:control()
-         lance2:goto( trinity:pos():add( 300, -100 ) )
+         lance:control()
+         lance:goto( trinity:pos() )
       end
    end
 end
-
-
--- Escort death functions -> will stop spawning
-function paci_dead () esc_pacifier = false end
-function lance1_dead () esc_lancelot1 = false end
-function lance2_dead () esc_lancelot2 = false end
 
 
 -- Handles arrival back to base
@@ -395,6 +354,7 @@ function land ()
          -- Failure to kill
          tk.msg( title[5], text[7] )
          var.push("trinity", true)
+         credits = credits / 2
       else
          -- Successfully killed
          tk.msg( title[4], string.format(text[6], player.name()) )
@@ -402,6 +362,7 @@ function land ()
       end
 
       -- Rewards
+      player.pay(credits)
       faction.modPlayerSingle("Empire",5)
 
       misn.finish(true)

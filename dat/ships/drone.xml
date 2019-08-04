@@ -2,10 +2,11 @@
 <ship name="Drone">
  <base_type>Drone</base_type>
  <GFX>drone</GFX>
- <GUI>slim</GUI>
+ <GUI>brushed</GUI>
  <sound>engine</sound>
  <class>Drone</class>
  <price>300000</price>
+ <time_mod>0.75</time_mod>
  <fabricator>Robosys</fabricator>
  <description>This is a modified version of the robotic drone that includes a life support system for humans.</description>
  <health>

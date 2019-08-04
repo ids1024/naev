@@ -2,10 +2,11 @@
 <ship name="Rhino">
  <base_type>Rhino</base_type>
  <GFX sx="10" sy="10">rhino</GFX>
- <GUI>slim</GUI>
+ <GUI>brushed</GUI>
  <sound>engine</sound>
  <class>Armoured Transport</class>
  <price>1100000</price>
+ <time_mod>2</time_mod>
  <fabricator>Melendez Corp.</fabricator>
  <license>Large Civilian Vessel License</license>
  <description>A particularly durable Melendez design, the Rhino is well-suited to transporting high-value, high-risk freight. While it has much lower cargo density than dedicated freighters, it protects itself extremely effectively. Its modular bays allow it to function as a personnel transport, a fact not lost on modern militaries.</description>
