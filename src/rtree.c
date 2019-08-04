@@ -72,6 +72,7 @@ static void rtree_free_node(struct rtree_node *node) {
 
 void rtree_free(struct rtree *tree) {
    rtree_free_node(tree->root);
+   free(tree);
 }
 
 static struct bounding_rectangle mbr_add(struct bounding_rectangle mbr1, struct bounding_rectangle mbr2) {
