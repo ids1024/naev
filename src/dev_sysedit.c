@@ -753,6 +753,7 @@ static void sysedit_renderAsteroidsField( double bx, double by, AsteroidAnchor *
          }
       }
 
+#if 0
       /* First render each convex subset : enable + resize + load vertices + load colors + draw + disable */
       glEnable(GL_POLYGON_SMOOTH);
       gl_vboData( sysedit_vbo, sizeof(GLfloat) * sub->ncorners*3*(2+4), NULL );
@@ -762,9 +763,11 @@ static void sysedit_renderAsteroidsField( double bx, double by, AsteroidAnchor *
       glDrawArrays( GL_TRIANGLES, 0, sub->ncorners*3 );
       gl_vboDeactivate();
       glDisable(GL_POLYGON_SMOOTH);
+#endif
 
    }
    
+#if 0
    /* Then render the triangle : enable + resize + load vertices + load colors + draw + disable */
    glEnable(GL_POLYGON_SMOOTH);
    gl_vboData( sysedit_vbo, sizeof(GLfloat) * 3*(2+4), NULL );
@@ -774,6 +777,7 @@ static void sysedit_renderAsteroidsField( double bx, double by, AsteroidAnchor *
    glDrawArrays( GL_TRIANGLES, 0, 3 );
    gl_vboDeactivate();
    glDisable(GL_POLYGON_SMOOTH);
+#endif
 }
 
 /**
